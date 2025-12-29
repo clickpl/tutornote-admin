@@ -93,8 +93,15 @@ export const dashboardApi = {
 
 // Academies
 export const academiesApi = {
-  list: (page = 1, perPage = 20, search = '') =>
-    fetchApi<{
+  list: (page = 1, perPage = 20, search = '', status = '') => {
+    const params = new URLSearchParams({
+      page: String(page),
+      per_page: String(perPage),
+    });
+    if (search) params.append('search', search);
+    if (status) params.append('status', status);
+
+    return fetchApi<{
       academies: Array<{
         id: number;
         name: string;
@@ -103,12 +110,14 @@ export const academiesApi = {
         owner_name: string;
         student_count: number;
         attendance_code_type: string;
+        status: string;
         created_at: string;
       }>;
       total: number;
       page: number;
       total_pages: number;
-    }>(`/api/admin/academies?page=${page}&per_page=${perPage}&search=${search}`),
+    }>(`/api/admin/academies?${params.toString()}`);
+  },
 
   get: (id: number) =>
     fetchApi<{
@@ -120,6 +129,8 @@ export const academiesApi = {
       owner_name: string;
       owner_phone: string;
       attendance_code_type: string;
+      status: string;
+      kiosk_code: string;
       created_at: string;
       student_count: number;
       students: Array<{
@@ -132,6 +143,35 @@ export const academiesApi = {
         created_at: string;
       }>;
     }>(`/api/admin/academies/${id}`),
+
+  update: (id: number, data: {
+    name?: string;
+    phone?: string;
+    address?: string;
+    attendance_code_method?: string;
+    kiosk_code?: string;
+  }) =>
+    fetchApi<{ success: boolean; message: string }>(
+      `/api/admin/academies/${id}`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+      }
+    ),
+
+  updateStatus: (id: number, status: string, reason?: string) =>
+    fetchApi<{
+      success: boolean;
+      message: string;
+      old_status: string;
+      new_status: string;
+    }>(
+      `/api/admin/academies/${id}/status`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ status, reason }),
+      }
+    ),
 
   impersonate: (id: number) =>
     fetchApi<{ token: string; redirect_url: string }>(

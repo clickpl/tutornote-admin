@@ -35,24 +35,33 @@ interface Academy {
   owner_name: string;
   student_count: number;
   attendance_code_type: string;
+  status: string;
   created_at: string;
 }
+
+const statusLabels: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
+  active: { label: '활성', variant: 'default' },
+  suspended: { label: '정지', variant: 'destructive' },
+  pending: { label: '대기', variant: 'secondary' },
+  deleted: { label: '삭제됨', variant: 'outline' },
+};
 
 export default function AcademiesPage() {
   const [academies, setAcademies] = useState<Academy[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
 
   useEffect(() => {
     fetchAcademies();
-  }, [page]);
+  }, [page, statusFilter]);
 
   const fetchAcademies = async (searchQuery = search) => {
     setLoading(true);
-    const { data, error } = await academiesApi.list(page, 20, searchQuery);
+    const { data, error } = await academiesApi.list(page, 20, searchQuery, statusFilter);
 
     if (data) {
       setAcademies(data.academies);
@@ -88,20 +97,54 @@ export default function AcademiesPage() {
           </div>
         </div>
 
-        {/* Search */}
-        <form onSubmit={handleSearch} className="flex gap-2">
-          <div className="relative max-w-md flex-1">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="학원명 또는 이메일로 검색..."
-              className="pl-10"
-            />
+        {/* Search and Filter */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <form onSubmit={handleSearch} className="flex gap-2 flex-1">
+            <div className="relative max-w-md flex-1">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="학원명 또는 이메일로 검색..."
+                className="pl-10"
+              />
+            </div>
+            <Button type="submit">검색</Button>
+          </form>
+
+          {/* Status Filter */}
+          <div className="flex gap-2">
+            <Button
+              variant={statusFilter === '' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => { setStatusFilter(''); setPage(1); }}
+            >
+              전체
+            </Button>
+            <Button
+              variant={statusFilter === 'active' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => { setStatusFilter('active'); setPage(1); }}
+            >
+              활성
+            </Button>
+            <Button
+              variant={statusFilter === 'suspended' ? 'destructive' : 'outline'}
+              size="sm"
+              onClick={() => { setStatusFilter('suspended'); setPage(1); }}
+            >
+              정지
+            </Button>
+            <Button
+              variant={statusFilter === 'pending' ? 'secondary' : 'outline'}
+              size="sm"
+              onClick={() => { setStatusFilter('pending'); setPage(1); }}
+            >
+              대기
+            </Button>
           </div>
-          <Button type="submit">검색</Button>
-        </form>
+        </div>
 
         {/* Table */}
         <Card>
@@ -130,6 +173,7 @@ export default function AcademiesPage() {
                       <TableHead>학원명</TableHead>
                       <TableHead>원장</TableHead>
                       <TableHead>학생수</TableHead>
+                      <TableHead>상태</TableHead>
                       <TableHead>출석방식</TableHead>
                       <TableHead>가입일</TableHead>
                       <TableHead className="w-[80px]">관리</TableHead>
@@ -138,7 +182,7 @@ export default function AcademiesPage() {
                   <TableBody>
                     {academies.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={6} className="h-32 text-center text-muted-foreground">
+                        <TableCell colSpan={7} className="h-32 text-center text-muted-foreground">
                           등록된 학원이 없습니다
                         </TableCell>
                       </TableRow>
@@ -165,6 +209,11 @@ export default function AcademiesPage() {
                               <Users className="h-4 w-4 text-muted-foreground" />
                               <span>{academy.student_count}명</span>
                             </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={statusLabels[academy.status || 'active']?.variant || 'default'}>
+                              {statusLabels[academy.status || 'active']?.label || academy.status}
+                            </Badge>
                           </TableCell>
                           <TableCell>
                             <Badge variant={academy.attendance_code_type === 'phone_last4' ? 'default' : 'secondary'}>
