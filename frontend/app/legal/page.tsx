@@ -40,6 +40,13 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 type TabType = 'consents' | 'requests';
 
@@ -74,6 +81,8 @@ export default function LegalPage() {
   const [categoryFilter, setCategoryFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [resendingId, setResendingId] = useState<number | null>(null);
+  const [termsDialogOpen, setTermsDialogOpen] = useState(false);
+  const [selectedConsent, setSelectedConsent] = useState<Consent | null>(null);
 
   useEffect(() => {
     fetchStats();
@@ -438,7 +447,15 @@ export default function LegalPage() {
                               <Badge variant={getStatusVariant(consent.status)}>{getStatusLabel(consent.status)}</Badge>
                             </TableCell>
                             <TableCell>
-                              <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 gap-1 text-xs"
+                                onClick={() => {
+                                  setSelectedConsent(consent);
+                                  setTermsDialogOpen(true);
+                                }}
+                              >
                                 <FileText className="h-3 w-3" />약관보기
                               </Button>
                             </TableCell>
@@ -553,7 +570,111 @@ export default function LegalPage() {
             <p>* 보호자 연락처 및 학생 이름은 개인정보보호를 위해 마스킹 처리됩니다.</p>
           </div>
         </div>
+
+        {/* 약관 보기 Dialog */}
+        <Dialog open={termsDialogOpen} onOpenChange={setTermsDialogOpen}>
+          <DialogContent className="max-h-[80vh] max-w-2xl overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Scale className="h-5 w-5" />
+                {selectedConsent && getCategoryLabel(selectedConsent.consent_category)}
+              </DialogTitle>
+              <DialogDescription>
+                버전: v{selectedConsent?.consent_version} | 동의일: {selectedConsent && formatDate(selectedConsent.consented_at)}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="mt-4 rounded-lg border bg-muted/30 p-4">
+              <TermsContent category={selectedConsent?.consent_category || ''} />
+            </div>
+            <div className="mt-4 flex items-center gap-4 rounded-lg bg-green-50 p-3 dark:bg-green-950">
+              <ShieldCheck className="h-5 w-5 text-green-600" />
+              <div className="text-sm">
+                <p className="font-medium text-green-700 dark:text-green-400">동의 완료</p>
+                <p className="text-green-600 dark:text-green-500">
+                  {selectedConsent?.user_name || selectedConsent?.email}님이 {selectedConsent && formatDate(selectedConsent.consented_at)}에 동의하였습니다.
+                </p>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </AdminLayout>
+  );
+}
+
+function TermsContent({ category }: { category: string }) {
+  const termsData: Record<string, { title: string; content: string }> = {
+    privacy_child: {
+      title: '아동 개인정보 수집·이용 동의',
+      content: `[수집 목적]
+- AI 기반 학습 피드백 리포트 생성 및 제공
+- 학습 진도 관리 및 출결 관리
+- 학부모 알림 서비스 제공
+
+[수집 항목]
+- 필수: 학생 이름, 학년, 학원 정보
+- 선택: 프로필 사진
+
+[보유 기간]
+- 서비스 이용 종료 시까지 (퇴원 후 1년간 보관 후 파기)
+
+[동의 거부 권리]
+- 동의를 거부할 권리가 있으며, 거부 시 AI 피드백 서비스 이용이 제한됩니다.`
+    },
+    ai_overseas: {
+      title: 'AI 국외이전 동의',
+      content: `[이전되는 개인정보]
+- 학생의 학습 진도 데이터 (익명화 처리)
+- 출결 기록
+
+[이전 국가 및 업체]
+- 미국 (Google Cloud / Gemini AI)
+
+[이전 목적]
+- AI 기반 학습 피드백 생성
+
+[이전 방법]
+- 암호화된 네트워크를 통한 전송
+
+[보유 기간]
+- 피드백 생성 완료 후 즉시 삭제
+
+[동의 거부 권리]
+- 동의를 거부할 권리가 있으며, 거부 시 AI 피드백 서비스 이용이 제한됩니다.`
+    },
+    terms: {
+      title: '서비스 이용약관',
+      content: `제1조 (목적)
+이 약관은 TutorNote 서비스의 이용에 관한 기본적인 사항을 규정함을 목적으로 합니다.
+
+제2조 (서비스 내용)
+- AI 기반 학습 피드백 생성
+- 출결 관리 시스템
+- 학부모 알림 서비스
+
+제3조 (이용자의 의무)
+회원은 서비스 이용 시 관계 법령을 준수해야 합니다.`
+    },
+    privacy: {
+      title: '개인정보 처리방침',
+      content: `1. 개인정보의 수집·이용 목적
+- 서비스 제공 및 계약 이행
+- 회원 관리 및 본인 확인
+
+2. 수집하는 개인정보 항목
+- 필수: 이메일, 비밀번호, 학원명, 연락처
+- 선택: 학원 주소
+
+3. 개인정보의 보유 및 이용 기간
+- 회원 탈퇴 시까지 (법령에 따른 보존 기간 별도)`
+    },
+  };
+
+  const data = termsData[category] || { title: '약관', content: '약관 내용을 불러올 수 없습니다.' };
+
+  return (
+    <div className="space-y-2 whitespace-pre-wrap text-sm text-muted-foreground">
+      {data.content}
+    </div>
   );
 }

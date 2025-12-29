@@ -318,3 +318,259 @@ export const systemApi = {
       };
     }>('/api/admin/system/health'),
 };
+
+// Metrics & Analytics
+export interface MetricsOverview {
+  retention: {
+    dau: number;
+    mau: number;
+    stickiness: number;
+    stickiness_label: string;
+    retention_rate: number;
+    retention_label: string;
+    churn_risk_count: number;
+  };
+  viral: {
+    cardnews_count: number;
+    total_shares: number;
+    viewed_shares: number;
+    share_ctr: number;
+    ctr_label: string;
+    total_views: number;
+  };
+  ai_efficiency: {
+    total_reports: number;
+    time_saved_minutes: number;
+    time_saved_hours: number;
+    time_saved_label: string;
+    consent_rate: number;
+    consent_label: string;
+    avg_reports_per_academy: number;
+  };
+  monetization: {
+    heavy_users: number;
+    heavy_user_rate: number;
+    heavy_user_label: string;
+    mau: number;
+  };
+}
+
+export interface ChurnRiskAcademy {
+  id: number;
+  name: string;
+  phone: string;
+  owner_email: string;
+  owner_name: string;
+  last_activity: string;
+  days_inactive: number;
+  student_count: number;
+  total_reports: number;
+  created_at: string;
+}
+
+export interface HeavyUserAcademy {
+  id: number;
+  name: string;
+  phone: string;
+  owner_email: string;
+  owner_name: string;
+  monthly_reports: number;
+  student_count: number;
+  total_shares: number;
+  created_at: string;
+}
+
+export const metricsApi = {
+  getOverview: () =>
+    fetchApi<MetricsOverview>('/api/admin/metrics/overview'),
+
+  getChurnRisk: () =>
+    fetchApi<{
+      academies: ChurnRiskAcademy[];
+      total: number;
+    }>('/api/admin/metrics/churn-risk'),
+
+  getHeavyUsers: () =>
+    fetchApi<{
+      academies: HeavyUserAcademy[];
+      total: number;
+    }>('/api/admin/metrics/heavy-users'),
+
+  getShareAnalytics: () =>
+    fetchApi<{
+      daily: Array<{ date: string; shares: number; views: number }>;
+      platforms: Record<string, number>;
+      month: { total_shares: number; total_views: number; avg_views: number };
+    }>('/api/admin/metrics/share-analytics'),
+
+  getConsentAnalytics: () =>
+    fetchApi<{
+      status: Record<string, number>;
+      total_students: number;
+      consent_rate: number;
+      consented: number;
+      pending: number;
+      daily: Array<{ date: string; count: number }>;
+    }>('/api/admin/metrics/consent-analytics'),
+
+  getReportAnalytics: () =>
+    fetchApi<{
+      daily: Array<{ date: string; count: number; academies: number }>;
+      top_academies: Array<{ id: number; name: string; report_count: number; student_count: number }>;
+      month: { total_reports: number; active_academies: number; active_students: number };
+    }>('/api/admin/metrics/report-analytics'),
+};
+
+// Data Recovery & Correction
+export interface DeletedItem {
+  id: number;
+  item_type: 'student' | 'report';
+  name?: string;
+  student_name?: string;
+  academy_id: number;
+  academy_name: string;
+  deleted_at: string;
+  record_date?: string;
+  current_piece?: string;
+  // 복구 기간 관련 필드
+  days_remaining?: number;
+  can_restore?: boolean;
+  expiry_date?: string;
+}
+
+export interface StudentDetail {
+  id: number;
+  name: string;
+  phone: string;
+  parent_phone: string;
+  grade: string;
+  attendance_code: string;
+  academy_id: number;
+  academy_name: string;
+  is_deleted: boolean;
+  deleted_at?: string;
+  created_at: string;
+}
+
+export interface ActionLog {
+  id: number;
+  operator_email: string;
+  action_type: string;
+  target_type: string;
+  target_id: number;
+  academy_id?: number;
+  academy_name?: string;
+  changes?: Record<string, { old: string; new: string }>;
+  reason?: string;
+  created_at: string;
+}
+
+export const recoveryApi = {
+  getDeletedItems: (page = 1, perPage = 20, type = '', academyId = '') => {
+    const params = new URLSearchParams({
+      page: String(page),
+      per_page: String(perPage),
+    });
+    if (type) params.append('type', type);
+    if (academyId) params.append('academy_id', academyId);
+
+    return fetchApi<{
+      items: DeletedItem[];
+      total: number;
+      page: number;
+      total_pages: number;
+    }>(`/api/admin/deleted-items?${params.toString()}`);
+  },
+
+  restore: (item_type: string, item_id: number, reason?: string) =>
+    fetchApi<{ success: boolean; message: string }>(
+      '/api/admin/restore',
+      {
+        method: 'POST',
+        body: JSON.stringify({ item_type, item_id, reason }),
+      }
+    ),
+
+  getStudentDetail: (studentId: number) =>
+    fetchApi<StudentDetail>(`/api/admin/students/${studentId}/detail`),
+
+  superEditStudent: (studentId: number, data: {
+    name?: string;
+    phone?: string;
+    grade?: string;
+    attendance_code?: string;
+  }, reason?: string) =>
+    fetchApi<{ success: boolean; message: string }>(
+      `/api/admin/students/${studentId}/super-edit`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ ...data, reason }),
+      }
+    ),
+
+  getActionLogs: (page = 1, perPage = 20, actionType = '', targetType = '') => {
+    const params = new URLSearchParams({
+      page: String(page),
+      per_page: String(perPage),
+    });
+    if (actionType) params.append('action_type', actionType);
+    if (targetType) params.append('target_type', targetType);
+
+    return fetchApi<{
+      logs: ActionLog[];
+      total: number;
+      page: number;
+      total_pages: number;
+    }>(`/api/admin/action-logs?${params.toString()}`);
+  },
+};
+
+// Attendance Correction
+export interface AttendanceRecord {
+  id: number;
+  student_id: number;
+  academy_id: number;
+  date: string;
+  check_in: string | null;
+  check_out: string | null;
+  status: 'present' | 'late' | 'absent' | 'makeup';
+  note: string | null;
+  student_name: string;
+  academy_name: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export const attendanceApi = {
+  getRecords: (studentId: number, page = 1, perPage = 20, dateFrom = '', dateTo = '') => {
+    const params = new URLSearchParams({
+      student_id: String(studentId),
+      page: String(page),
+      per_page: String(perPage),
+    });
+    if (dateFrom) params.append('date_from', dateFrom);
+    if (dateTo) params.append('date_to', dateTo);
+
+    return fetchApi<{
+      records: AttendanceRecord[];
+      total: number;
+      page: number;
+      total_pages: number;
+    }>(`/api/admin/attendance?${params.toString()}`);
+  },
+
+  update: (attendanceId: number, data: {
+    check_in?: string | null;
+    check_out?: string | null;
+    status?: string;
+    note?: string;
+    reason?: string;
+  }) =>
+    fetchApi<{ success: boolean; message: string; changes: Record<string, unknown> }>(
+      `/api/admin/attendance/${attendanceId}`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+      }
+    ),
+};

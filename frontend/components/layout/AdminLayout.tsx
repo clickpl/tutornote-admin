@@ -15,6 +15,8 @@ import {
   ChevronDown,
   Moon,
   Sun,
+  BarChart3,
+  RotateCcw,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
@@ -39,7 +41,9 @@ interface AdminLayoutProps {
 
 const menuItems = [
   { href: '/dashboard', label: '대시보드', icon: LayoutDashboard },
+  { href: '/metrics', label: '인사이트 지표', icon: BarChart3 },
   { href: '/academies', label: '학원 관리', icon: Building2 },
+  { href: '/recovery', label: '복구/수정 센터', icon: RotateCcw },
   { href: '/legal', label: '법무 관리', icon: Scale },
   { href: '/notifications', label: '알림 관리', icon: Bell },
   { href: '/system', label: '시스템', icon: Settings },

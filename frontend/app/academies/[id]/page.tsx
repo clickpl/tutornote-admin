@@ -450,6 +450,7 @@ export default function AcademyDetailPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead className="w-16">ID</TableHead>
                       <TableHead>이름</TableHead>
                       <TableHead>출석번호</TableHead>
                       <TableHead>연락처</TableHead>
@@ -460,13 +461,14 @@ export default function AcademyDetailPage() {
                   <TableBody>
                     {academy.students.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={5} className="h-32 text-center text-muted-foreground">
+                        <TableCell colSpan={6} className="h-32 text-center text-muted-foreground">
                           등록된 학생이 없습니다
                         </TableCell>
                       </TableRow>
                     ) : (
                       academy.students.map((student) => (
                         <TableRow key={student.id}>
+                          <TableCell className="font-mono text-muted-foreground">{student.id}</TableCell>
                           <TableCell className="font-medium">{student.name_masked}</TableCell>
                           <TableCell>
                             <code className="rounded bg-muted px-2 py-1 text-sm text-primary">
