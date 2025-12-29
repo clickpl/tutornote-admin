@@ -66,8 +66,8 @@ export default function LoginPage() {
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary">
             <span className="text-2xl font-bold text-primary-foreground">T</span>
           </div>
-          <CardTitle className="text-2xl font-bold">TutorNote Admin</CardTitle>
-          <CardDescription>Master Admin 로그인</CardDescription>
+          <CardTitle className="text-2xl font-bold">TutorNote Master Admin</CardTitle>
+          {/* <CardDescription>Master Admin 로그인</CardDescription> */}
         </CardHeader>
         <CardContent>
           {/* Error Message */}
