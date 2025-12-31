@@ -91,6 +91,8 @@ export default function RecoveryPage() {
   });
   const [attendanceEditReason, setAttendanceEditReason] = useState('');
   const [savingAttendance, setSavingAttendance] = useState(false);
+  const [attendanceSearched, setAttendanceSearched] = useState(false);
+  const [attendanceStudentName, setAttendanceStudentName] = useState('');
 
   // Load deleted items
   const loadDeletedItems = async () => {
@@ -133,16 +135,20 @@ export default function RecoveryPage() {
     }
 
     setSearchingAttendance(true);
+    setAttendanceSearched(false);
     const { data, error } = await attendanceApi.getRecords(studentId, attendancePage);
 
     if (data) {
       setAttendanceRecords(data.records);
       setAttendanceTotalPages(data.total_pages);
       setAttendanceTotal(data.total);
+      setAttendanceStudentName(data.records[0]?.student_name || `학생 ID: ${studentId}`);
     } else {
       alert(error || '출석 기록을 찾을 수 없습니다.');
       setAttendanceRecords([]);
+      setAttendanceStudentName(`학생 ID: ${studentId}`);
     }
+    setAttendanceSearched(true);
     setSearchingAttendance(false);
   };
 
@@ -629,17 +635,26 @@ export default function RecoveryPage() {
             </Card>
 
             {/* 출석 기록 목록 */}
-            {attendanceRecords.length > 0 && (
+            {attendanceSearched && (
               <Card className="md:col-span-2">
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
                     <span>출석 기록 ({attendanceTotal}건)</span>
-                    <span className="text-sm font-normal text-muted-foreground">
-                      {attendanceRecords[0]?.student_name} - {attendanceRecords[0]?.academy_name}
-                    </span>
+                    {attendanceRecords.length > 0 && (
+                      <span className="text-sm font-normal text-muted-foreground">
+                        {attendanceRecords[0]?.student_name} - {attendanceRecords[0]?.academy_name}
+                      </span>
+                    )}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
+                  {attendanceRecords.length === 0 ? (
+                    <div className="text-center py-12 text-muted-foreground">
+                      <CalendarClock className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                      <p className="text-lg font-medium">출석 기록이 없습니다</p>
+                      <p className="text-sm mt-1">{attendanceStudentName}의 출석 기록을 찾을 수 없습니다.</p>
+                    </div>
+                  ) : (
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -679,9 +694,10 @@ export default function RecoveryPage() {
                       ))}
                     </TableBody>
                   </Table>
+                  )}
 
                   {/* Pagination */}
-                  {attendanceTotalPages > 1 && (
+                  {attendanceRecords.length > 0 && attendanceTotalPages > 1 && (
                     <div className="flex items-center justify-between mt-4">
                       <div className="text-sm text-muted-foreground">
                         총 {attendanceTotal}건
