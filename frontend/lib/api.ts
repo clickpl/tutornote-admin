@@ -306,7 +306,78 @@ export const legalApi = {
     }>('/api/admin/legal/stats'),
 };
 
-// System
+// System - Types
+export interface PM2Process {
+  name: string;
+  status: string;
+  restarts: number;
+  memory: number;
+  cpu: number;
+  uptime: number;
+}
+
+export interface ServerMetrics {
+  latest: {
+    id: number;
+    cpu_usage: number;
+    ram_usage: number;
+    ram_total_mb: number;
+    ram_used_mb: number;
+    ram_available_mb: number;
+    disk_usage: number;
+    disk_total_gb: number;
+    disk_used_gb: number;
+    disk_free_gb: number;
+    uptime: string;
+    pm2_status: PM2Process[];
+    recorded_at: string;
+  } | null;
+  trends: {
+    hour: string;
+    avg_cpu: number;
+    avg_ram: number;
+    avg_disk: number;
+  }[];
+  timestamp: string;
+}
+
+export interface QuotaDetail {
+  daily: {
+    used: number;
+    limit: number;
+    remaining: number;
+    usage_percent: number;
+    request_count: number;
+    success_rate: number;
+    avg_response_ms: number;
+  };
+  monthly: {
+    used: number;
+    limit: number;
+    remaining: number;
+    usage_percent: number;
+    total_cost: number;
+  };
+}
+
+export interface GeminiQuota {
+  SERVICE: QuotaDetail;
+  ADMIN: QuotaDetail;
+}
+
+export interface LogEntry {
+  content: string;
+  is_error: boolean;
+}
+
+export interface DiagnosisResult {
+  diagnosis: string;
+  severity: 'critical' | 'warning' | 'info';
+  solution: string;
+  explanation: string;
+}
+
+// System - API
 export const systemApi = {
   getHealth: () =>
     fetchApi<{
@@ -317,6 +388,29 @@ export const systemApi = {
         kakao_api: string;
       };
     }>('/api/admin/system/health'),
+
+  getMetrics: () =>
+    fetchApi<ServerMetrics>('/api/admin/system/metrics'),
+
+  getGeminiQuota: () =>
+    fetchApi<GeminiQuota>('/api/admin/system/gemini-quota'),
+
+  getLogs: (app = 'tutornote-backend', lines = 50, errorOnly = true) =>
+    fetchApi<{
+      app: string;
+      logs: LogEntry[];
+      total: number;
+      timestamp: string;
+    }>(`/api/admin/system/logs?app=${app}&lines=${lines}&error_only=${errorOnly}`),
+
+  diagnoseLogs: (logs: string, context?: string) =>
+    fetchApi<DiagnosisResult>(
+      '/api/admin/system/logs/diagnose',
+      {
+        method: 'POST',
+        body: JSON.stringify({ logs, context }),
+      }
+    ),
 };
 
 // Metrics & Analytics
