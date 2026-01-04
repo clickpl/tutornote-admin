@@ -99,7 +99,7 @@ function GaugeCard({
   );
 }
 
-// Gemini 쿼터 카드 컴포넌트
+// Claude AI 쿼터 카드 컴포넌트
 function QuotaCard({ quota, type }: { quota: QuotaDetail; type: string }) {
   const label = type === 'SERVICE' ? '서비스 API' : '어드민 API';
   const description = type === 'SERVICE' ? '학원 리포트 생성용' : '서버 진단용';
@@ -545,7 +545,7 @@ export default function SystemPage() {
                   <div className="flex items-center justify-between rounded-lg border p-3">
                     <div className="flex items-center gap-3">
                       <Zap className="h-4 w-4 text-purple-500" />
-                      <span className="text-sm">Gemini API</span>
+                      <span className="text-sm">Claude API</span>
                     </div>
                     {getStatusIcon(health?.components.gemini_api || '')}
                   </div>

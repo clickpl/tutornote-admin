@@ -628,7 +628,7 @@ function TermsContent({ category }: { category: string }) {
 - 출결 기록
 
 [이전 국가 및 업체]
-- 미국 (Google Cloud / Gemini AI)
+- 미국 (Anthropic / Claude AI)
 
 [이전 목적]
 - AI 기반 학습 피드백 생성

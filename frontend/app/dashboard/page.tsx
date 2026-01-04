@@ -168,14 +168,14 @@ export default function DashboardPage() {
 
             {/* 서비스 건강도 */}
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-              {/* Gemini AI */}
+              {/* Claude AI */}
               <Card>
                 <CardHeader className="flex flex-row items-center gap-4">
                   <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-500/10">
                     <Zap className="h-5 w-5 text-purple-500" />
                   </div>
                   <div>
-                    <CardTitle className="text-base">Gemini AI (피드백 생성)</CardTitle>
+                    <CardTitle className="text-base">Claude AI (피드백 생성)</CardTitle>
                     <CardDescription>AI 피드백 서비스 상태</CardDescription>
                   </div>
                 </CardHeader>
