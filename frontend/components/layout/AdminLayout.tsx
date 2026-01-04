@@ -39,9 +39,13 @@ interface AdminLayoutProps {
   children: ReactNode;
 }
 
+// Phase 2 완료 시 true로 변경하여 인사이트 지표 메뉴 활성화
+const ENABLE_METRICS_PAGE = false;
+
 const menuItems = [
   { href: '/dashboard', label: '대시보드', icon: LayoutDashboard },
-  { href: '/metrics', label: '인사이트 지표', icon: BarChart3 },
+  // 인사이트 지표 - Phase 2 완료 시 활성화 (ENABLE_METRICS_PAGE = true)
+  ...(ENABLE_METRICS_PAGE ? [{ href: '/metrics', label: '인사이트 지표', icon: BarChart3 }] : []),
   { href: '/academies', label: '학원 관리', icon: Building2 },
   { href: '/recovery', label: '복구/수정 센터', icon: RotateCcw },
   { href: '/legal', label: '법무 관리', icon: Scale },

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Activity,
   TrendingUp,
@@ -17,9 +18,12 @@ import {
 } from 'lucide-react';
 import AdminLayout from '@/components/layout/AdminLayout';
 import { metricsApi, MetricsOverview, ChurnRiskAcademy, HeavyUserAcademy } from '@/lib/api';
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
 import {
   Table,
   TableBody,
@@ -30,14 +34,27 @@ import {
 } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 
+// Phase 2 완료 시 true로 변경하여 페이지 활성화
+const ENABLE_METRICS_PAGE = false;
+
 export default function MetricsPage() {
+  const router = useRouter();
   const [overview, setOverview] = useState<MetricsOverview | null>(null);
   const [churnRisk, setChurnRisk] = useState<ChurnRiskAcademy[]>([]);
   const [heavyUsers, setHeavyUsers] = useState<HeavyUserAcademy[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Phase 2 완료 전까지 대시보드로 리다이렉트
   useEffect(() => {
-    fetchData();
+    if (!ENABLE_METRICS_PAGE) {
+      router.replace('/dashboard');
+    }
+  }, [router]);
+
+  useEffect(() => {
+    if (ENABLE_METRICS_PAGE) {
+      fetchData();
+    }
   }, []);
 
   const fetchData = async () => {

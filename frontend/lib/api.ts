@@ -89,6 +89,22 @@ export const dashboardApi = {
       };
       system: { database: string; image_service: string };
     }>('/api/admin/dashboard/api-health'),
+
+  getAlerts: () =>
+    fetchApi<{
+      alerts: Array<{
+        id: string;
+        severity: 'critical' | 'warning';
+        type: string;
+        title: string;
+        description: string;
+        action: string;
+        value: number;
+        threshold: number;
+        created_at: string;
+      }>;
+      total_count: number;
+    }>('/api/admin/dashboard/alerts'),
 };
 
 // Academies

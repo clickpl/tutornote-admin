@@ -11,6 +11,7 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import AdminLayout from '@/components/layout/AdminLayout';
+import CriticalAlerts from '@/components/dashboard/CriticalAlerts';
 import { dashboardApi } from '@/lib/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -109,6 +110,9 @@ export default function DashboardPage() {
   return (
     <AdminLayout>
       <div className="mx-auto max-w-7xl space-y-6">
+        {/* Critical Alerts - 최상단 */}
+        <CriticalAlerts />
+
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">대시보드</h1>
           <Badge variant="outline" className="gap-1">
