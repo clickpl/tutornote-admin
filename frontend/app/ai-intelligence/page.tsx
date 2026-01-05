@@ -551,12 +551,12 @@ export default function AIIntelligencePage() {
                     </CardDescription>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Select value={logType} onValueChange={setLogType}>
+                    <Select value={logType || 'all'} onValueChange={(v) => setLogType(v === 'all' ? '' : v)}>
                       <SelectTrigger className="w-32">
                         <SelectValue placeholder="전체 유형" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">전체</SelectItem>
+                        <SelectItem value="all">전체</SelectItem>
                         <SelectItem value="daily">일일 인텔리전스</SelectItem>
                         <SelectItem value="playbook">Playbook</SelectItem>
                         <SelectItem value="message">메시지</SelectItem>
