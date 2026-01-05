@@ -140,3 +140,17 @@ class TelegramNotifier:
 
 # 싱글톤 인스턴스 생성
 telegram_notifier = TelegramNotifier()
+
+
+def send_telegram_message(message: str, parse_mode: str = 'Markdown') -> bool:
+    """
+    텔레그램 메시지 발송 헬퍼 함수
+
+    Args:
+        message: 발송할 메시지
+        parse_mode: 파싱 모드 ('Markdown' 또는 'HTML')
+
+    Returns:
+        bool: 발송 성공 여부
+    """
+    return telegram_notifier.send_message(message, parse_mode)
