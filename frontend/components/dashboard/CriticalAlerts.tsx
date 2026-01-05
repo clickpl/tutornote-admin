@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   AlertCircle,
   AlertTriangle,
@@ -23,6 +24,7 @@ interface Alert {
   value: number;
   threshold: number;
   created_at: string;
+  academy_id?: number;
 }
 
 interface AlertsResponse {
@@ -55,11 +57,21 @@ async function fetchAlerts(): Promise<AlertsResponse | null> {
 }
 
 export default function CriticalAlerts() {
+  const router = useRouter();
   const [data, setData] = useState<AlertsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+
+  const handleAction = useCallback((alert: Alert) => {
+    // AI 인텔리전스 페이지로 이동하여 해당 학원에 대한 조치 수행
+    if (alert.academy_id) {
+      router.push(`/ai-intelligence?academyId=${alert.academy_id}&type=${alert.type}&days=${alert.value}`);
+    } else {
+      router.push('/ai-intelligence');
+    }
+  }, [router]);
 
   const loadAlerts = useCallback(async () => {
     setLoading(true);
@@ -194,7 +206,7 @@ export default function CriticalAlerts() {
       {expanded && (
         <div className="space-y-3">
           {data.alerts.map((alert) => (
-            <AlertCard key={alert.id} alert={alert} />
+            <AlertCard key={alert.id} alert={alert} onAction={handleAction} />
           ))}
         </div>
       )}
@@ -202,7 +214,7 @@ export default function CriticalAlerts() {
   );
 }
 
-function AlertCard({ alert }: { alert: Alert }) {
+function AlertCard({ alert, onAction }: { alert: Alert; onAction: (alert: Alert) => void }) {
   const isCritical = alert.severity === 'critical';
 
   return (
@@ -250,6 +262,7 @@ function AlertCard({ alert }: { alert: Alert }) {
             !isCritical &&
             'bg-yellow-600 hover:bg-yellow-700 dark:bg-yellow-700 dark:hover:bg-yellow-800'
           }`}
+          onClick={() => onAction(alert)}
         >
           조치하기
         </Button>
