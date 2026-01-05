@@ -635,6 +635,241 @@ export const recoveryApi = {
   },
 };
 
+// =============================================================================
+// Phase 2: Dashboard Metrics API
+// =============================================================================
+
+export interface AcademyStatusMetrics {
+  active_academies: number;
+  total_academies: number;
+  new_this_month: number;
+  churned_this_month: number;
+  active_rate: number;
+}
+
+export interface StudentStatsMetrics {
+  total_students: number;
+  new_this_month: number;
+  avg_per_academy: number;
+  with_consent: number;
+  consent_rate: number;
+}
+
+export interface ReportActivityMetrics {
+  today: number;
+  this_week: number;
+  this_month: number;
+  avg_daily: number;
+}
+
+export interface EngagementMetrics {
+  dau: number;
+  mau: number;
+  stickiness: number;
+  stickiness_label: string;
+}
+
+export interface ContentGenerationMetrics {
+  card_news_today: number;
+  card_news_month: number;
+  generation_rate: number;
+}
+
+export interface ParentReachMetrics {
+  total_shares: number;
+  total_views: number;
+  view_rate: number;
+  avg_duration: number;
+}
+
+export interface AIEfficiencyMetrics {
+  total_reports: number;
+  ai_generated: number;
+  ai_rate: number;
+  avg_generation_time: number;
+  edited_count: number;
+  edit_rate: number;
+}
+
+export interface OnboardingFunnelMetrics {
+  signup: number;
+  student_added: number;
+  report_created: number;
+  shared: number;
+  conversion_rate: number;
+}
+
+export interface MonetizationMetrics {
+  heavy_users: number;
+  heavy_user_rate: number;
+  estimated_mrr: number;
+  potential_upgrades: number;
+}
+
+export interface CostBreakdownMetrics {
+  ai_cost_today: number;
+  ai_cost_month: number;
+  kakao_cost_month: number;
+  total_cost_month: number;
+  cost_per_report: number;
+}
+
+export interface SystemHealthMetrics {
+  cpu_usage: number;
+  ram_usage: number;
+  disk_usage: number;
+  uptime_hours: number;
+}
+
+export interface ApiStatusMetrics {
+  claude: { status: string; success_rate: number; avg_response_time: number };
+  kakao: { status: string; success_rate: number; sent_today: number };
+}
+
+export interface AtRiskAcademy {
+  id: number;
+  academy_name: string;
+  owner_name: string;
+  phone: string;
+  student_count: number;
+  report_count: number;
+  last_activity: string | null;
+  inactive_days: number;
+  signup_date: string;
+  risk_level: 'critical' | 'warning' | 'caution';
+}
+
+export interface ActiveAcademy {
+  id: number;
+  academy_name: string;
+  owner_name: string;
+  phone: string;
+  student_count: number;
+  monthly_reports: number;
+  total_shares: number;
+  last_activity: string | null;
+  signup_date: string;
+  is_heavy_user: boolean;
+  recommended_plan: string;
+}
+
+export interface OnboardingFunnelAcademy {
+  id: number;
+  academy_name: string;
+  owner_name: string;
+  signup_date: string;
+  has_students: boolean;
+  student_count: number;
+  created_report: boolean;
+  report_count: number;
+  shared_kakaotalk: boolean;
+  current_step: number;
+  status: string;
+}
+
+export const dashboardMetricsApi = {
+  // 12개 핵심 지표 API
+  getAcademyStatus: () =>
+    fetchApi<AcademyStatusMetrics>('/api/admin/metrics/academy-status'),
+
+  getStudentStats: () =>
+    fetchApi<StudentStatsMetrics>('/api/admin/metrics/student-stats'),
+
+  getReportActivity: () =>
+    fetchApi<ReportActivityMetrics>('/api/admin/metrics/report-activity'),
+
+  getEngagement: () =>
+    fetchApi<EngagementMetrics>('/api/admin/metrics/engagement'),
+
+  getContentGeneration: () =>
+    fetchApi<ContentGenerationMetrics>('/api/admin/metrics/content-generation'),
+
+  getParentReach: () =>
+    fetchApi<ParentReachMetrics>('/api/admin/metrics/parent-reach'),
+
+  getAIEfficiency: () =>
+    fetchApi<AIEfficiencyMetrics>('/api/admin/metrics/ai-efficiency'),
+
+  getOnboardingFunnel: () =>
+    fetchApi<OnboardingFunnelMetrics>('/api/admin/metrics/onboarding-funnel'),
+
+  getMonetization: () =>
+    fetchApi<MonetizationMetrics>('/api/admin/metrics/monetization'),
+
+  getCostBreakdown: () =>
+    fetchApi<CostBreakdownMetrics>('/api/admin/metrics/cost-breakdown'),
+
+  getSystemHealth: () =>
+    fetchApi<SystemHealthMetrics>('/api/admin/metrics/system-health'),
+
+  getApiStatus: () =>
+    fetchApi<ApiStatusMetrics>('/api/admin/metrics/api-status'),
+};
+
+export const dashboardTablesApi = {
+  // 3개 테이블 API
+  getAtRiskAcademies: () =>
+    fetchApi<{ academies: AtRiskAcademy[]; total_count: number }>(
+      '/api/admin/tables/at-risk-academies'
+    ),
+
+  getActiveAcademies: () =>
+    fetchApi<{ academies: ActiveAcademy[]; total_count: number }>(
+      '/api/admin/tables/active-academies'
+    ),
+
+  getOnboardingFunnel: () =>
+    fetchApi<{
+      academies: OnboardingFunnelAcademy[];
+      total_count: number;
+      funnel_summary: {
+        signup: number;
+        student_added: number;
+        report_created: number;
+        shared: number;
+      };
+      conversion_rates: {
+        signup_to_student: number;
+        student_to_report: number;
+        report_to_share: number;
+        overall: number;
+      };
+    }>('/api/admin/tables/onboarding-funnel'),
+
+  getHeavyUsers: () =>
+    fetchApi<{ academies: ActiveAcademy[]; total_count: number }>(
+      '/api/admin/tables/heavy-users'
+    ),
+};
+
+export const reportTrackingApi = {
+  // 학부모 열람 추적 API
+  trackView: (shareToken: string, viewerType = 'parent') =>
+    fetchApi<{ success: boolean; view_id: number }>(
+      '/api/reports/track-view',
+      {
+        method: 'POST',
+        body: JSON.stringify({ share_token: shareToken, viewer_type: viewerType }),
+      }
+    ),
+
+  trackDuration: (shareToken: string, duration: number) =>
+    fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3003'}/api/reports/track-duration`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ share_token: shareToken, duration }),
+      keepalive: true, // Beacon API 대용
+    }),
+
+  getViewsStats: () =>
+    fetchApi<{
+      total_views: number;
+      unique_reports: number;
+      avg_duration: number;
+      parent_views: number;
+    }>('/api/reports/views-stats'),
+};
+
 // Attendance Correction
 export interface AttendanceRecord {
   id: number;
@@ -683,4 +918,129 @@ export const attendanceApi = {
         body: JSON.stringify(data),
       }
     ),
+};
+
+// =============================================================================
+// Phase 3: AI Intelligence API
+// =============================================================================
+
+export interface AIIntelligenceLog {
+  id: number;
+  type: 'daily' | 'alert' | 'playbook' | 'message';
+  academy_id: number | null;
+  academy_name: string | null;
+  output_content: string;
+  model: string;
+  input_tokens: number;
+  output_tokens: number;
+  cost_krw: number;
+  action_taken: boolean;
+  action_note: string | null;
+  action_at: string | null;
+  created_at: string;
+}
+
+export interface AICostSummary {
+  by_purpose: Array<{
+    purpose: string;
+    request_count: number;
+    total_input_tokens: number;
+    total_output_tokens: number;
+    total_cost_usd: number;
+  }>;
+  total_requests: number;
+  total_tokens: number;
+  total_cost_usd: number;
+}
+
+export interface AIInsight {
+  id: string;
+  type: 'critical' | 'warning' | 'opportunity';
+  title: string;
+  description: string;
+  academyId: number;
+  playbookReady: boolean;
+  messageReady: boolean;
+}
+
+export interface AITodayInsights {
+  insights: AIInsight[];
+  summary: {
+    critical: number;
+    warning: number;
+    opportunity: number;
+  };
+}
+
+export interface AIPlaybookRequest {
+  academy_id: number;
+  situation_type: 'inactivity_7d' | 'inactivity_14d' | 'inactivity_21d' | 'inactivity_30d' | 'low_engagement' | 'heavy_user';
+}
+
+export interface AIMessageRequest {
+  academy_id: number;
+  message_type: 'check_in' | 'engagement_tips' | 'thank_you' | 'upgrade_soft';
+}
+
+export const aiIntelligenceApi = {
+  // 일일 인텔리전스 생성
+  generateDailyIntelligence: () =>
+    fetchApi<{ intelligence: string; tokens_used: number }>(
+      '/api/admin/ai/daily-intelligence',
+      { method: 'POST' }
+    ),
+
+  // Playbook 생성
+  generatePlaybook: (data: AIPlaybookRequest) =>
+    fetchApi<{ playbook: string; academy_name: string; tokens_used: number }>(
+      '/api/admin/ai/playbook',
+      {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }
+    ),
+
+  // AI 메시지 생성
+  generateMessage: (data: AIMessageRequest) =>
+    fetchApi<{ message: string; academy_name: string; tokens_used: number }>(
+      '/api/admin/ai/message',
+      {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }
+    ),
+
+  // 텔레그램 승인 요청 발송
+  sendApprovalRequest: (data: { academy_id: number; message: string; message_type: string }) =>
+    fetchApi<{ success: boolean; message: string }>(
+      '/api/admin/ai/send-approval',
+      {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }
+    ),
+
+  // AI 로그 조회
+  getLogs: (page = 1, perPage = 20, logType = '') => {
+    const params = new URLSearchParams({
+      page: String(page),
+      per_page: String(perPage),
+    });
+    if (logType) params.append('type', logType);
+
+    return fetchApi<{
+      logs: AIIntelligenceLog[];
+      total: number;
+      page: number;
+      total_pages: number;
+    }>(`/api/admin/ai/logs?${params.toString()}`);
+  },
+
+  // 비용 요약 조회
+  getCostSummary: () =>
+    fetchApi<AICostSummary>('/api/admin/ai/cost-summary'),
+
+  // 오늘의 인사이트 조회
+  getTodayInsights: () =>
+    fetchApi<AITodayInsights>('/api/admin/ai/today-insights'),
 };

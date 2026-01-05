@@ -17,6 +17,7 @@ import {
   Sun,
   BarChart3,
   RotateCcw,
+  Brain,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
@@ -46,6 +47,7 @@ const menuItems = [
   { href: '/dashboard', label: '대시보드', icon: LayoutDashboard },
   // 인사이트 지표 - Phase 2 완료 시 활성화 (ENABLE_METRICS_PAGE = true)
   ...(ENABLE_METRICS_PAGE ? [{ href: '/metrics', label: '인사이트 지표', icon: BarChart3 }] : []),
+  { href: '/ai-intelligence', label: 'AI 인텔리전스', icon: Brain },
   { href: '/academies', label: '학원 관리', icon: Building2 },
   { href: '/recovery', label: '복구/수정 센터', icon: RotateCcw },
   { href: '/legal', label: '법무 관리', icon: Scale },
