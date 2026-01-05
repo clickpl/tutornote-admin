@@ -55,6 +55,7 @@ import {
   AITodayInsights,
   AIInsight,
 } from '@/lib/api';
+import { formatKSTDate } from '@/lib/utils';
 
 export default function AIIntelligencePage() {
   // 상태 관리
@@ -606,7 +607,7 @@ export default function AIIntelligencePage() {
                               {log.input_tokens + log.output_tokens}
                             </TableCell>
                             <TableCell className="text-sm text-muted-foreground">
-                              {new Date(log.created_at).toLocaleString('ko-KR')}
+                              {formatKSTDate(log.created_at)}
                             </TableCell>
                             <TableCell>
                               {log.action_taken ? (

@@ -33,6 +33,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Trash2, RotateCcw, Edit, History, Search, User, FileText, AlertTriangle, Clock, CalendarClock } from 'lucide-react';
 import { recoveryApi, attendanceApi, DeletedItem, StudentDetail, ActionLog, AttendanceRecord } from '@/lib/api';
+import { formatKSTDate, formatKSTTimeOnly } from '@/lib/utils';
 import AdminLayout from '@/components/layout/AdminLayout';
 
 export default function RecoveryPage() {
@@ -284,7 +285,7 @@ export default function RecoveryPage() {
   };
 
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleString('ko-KR');
+    return formatKSTDate(dateStr);
   };
 
   const getTypeBadge = (type: string) => {
@@ -673,10 +674,10 @@ export default function RecoveryPage() {
                           <TableCell className="font-mono">{record.id}</TableCell>
                           <TableCell>{record.date}</TableCell>
                           <TableCell>
-                            {record.check_in ? new Date(record.check_in).toLocaleTimeString('ko-KR') : '-'}
+                            {record.check_in ? formatKSTTimeOnly(record.check_in) : '-'}
                           </TableCell>
                           <TableCell>
-                            {record.check_out ? new Date(record.check_out).toLocaleTimeString('ko-KR') : '-'}
+                            {record.check_out ? formatKSTTimeOnly(record.check_out) : '-'}
                           </TableCell>
                           <TableCell>{getAttendanceStatusBadge(record.status)}</TableCell>
                           <TableCell className="max-w-xs truncate">{record.note || '-'}</TableCell>

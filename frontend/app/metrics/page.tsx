@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import AdminLayout from '@/components/layout/AdminLayout';
 import { metricsApi, MetricsOverview, ChurnRiskAcademy, HeavyUserAcademy } from '@/lib/api';
+import { formatKSTDateOnly } from '@/lib/utils';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -325,7 +326,7 @@ export default function MetricsPage() {
                           <TableCell>{academy.total_reports}</TableCell>
                           <TableCell className="text-muted-foreground">
                             {academy.last_activity
-                              ? new Date(academy.last_activity).toLocaleDateString('ko-KR')
+                              ? formatKSTDateOnly(academy.last_activity)
                               : '없음'}
                           </TableCell>
                           <TableCell>
@@ -389,7 +390,7 @@ export default function MetricsPage() {
                           </TableCell>
                           <TableCell>{academy.total_shares}</TableCell>
                           <TableCell className="text-muted-foreground">
-                            {new Date(academy.created_at).toLocaleDateString('ko-KR')}
+                            {formatKSTDateOnly(academy.created_at)}
                           </TableCell>
                         </TableRow>
                       ))
