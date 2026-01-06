@@ -13,6 +13,7 @@ import {
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { formatKSTDate } from '@/lib/utils';
 
 interface Alert {
   id: string;
@@ -250,9 +251,11 @@ function AlertCard({ alert, onAction }: { alert: Alert; onAction: (alert: Alert)
           <p className="text-xs text-gray-600 dark:text-gray-400">
             <strong>권장 조치:</strong> {alert.action}
           </p>
-          <p className="mt-2 text-xs text-gray-400 dark:text-gray-500">
-            {new Date(alert.created_at).toLocaleString('ko-KR')}
-          </p>
+          {alert.created_at && (
+            <p className="mt-2 text-xs text-gray-400 dark:text-gray-500">
+              마지막 활동: {formatKSTDate(alert.created_at)}
+            </p>
+          )}
         </div>
 
         <Button
