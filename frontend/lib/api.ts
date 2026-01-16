@@ -926,7 +926,8 @@ export const attendanceApi = {
 
 export interface AIIntelligenceLog {
   id: number;
-  type: 'daily' | 'alert' | 'playbook' | 'message';
+  type: 'daily' | 'alert' | 'playbook' | 'message' | 'report';
+  provider: 'gemini' | 'claude';
   academy_id: number | null;
   academy_name: string | null;
   output_content: string;
@@ -941,13 +942,16 @@ export interface AIIntelligenceLog {
 }
 
 export interface AICostSummary {
-  by_purpose: Array<{
-    purpose: string;
+  gemini: {
     request_count: number;
-    total_input_tokens: number;
-    total_output_tokens: number;
+    total_tokens: number;
     total_cost_usd: number;
-  }>;
+  };
+  claude: {
+    request_count: number;
+    total_tokens: number;
+    total_cost_usd: number;
+  };
   total_requests: number;
   total_tokens: number;
   total_cost_usd: number;

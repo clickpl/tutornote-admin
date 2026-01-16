@@ -190,7 +190,7 @@ export default function DashboardPage() {
 
         {/* 12개 핵심 지표 카드 - 4x3 Grid */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {/* Row 1: 학원 현황 */}
+          {/* Row 1: 학원/학생 + 리포트 */}
           <MetricCard
             icon={Building2}
             label="활성 학원"
@@ -220,17 +220,15 @@ export default function DashboardPage() {
             loading={loading}
           />
           <MetricCard
-            icon={Activity}
-            label="고착도 (Stickiness)"
-            value={`${engagement?.stickiness?.toFixed(1) ?? 0}%`}
-            subValue={`DAU ${engagement?.dau ?? 0} / MAU ${engagement?.mau ?? 0}`}
-            trend={engagement && engagement.stickiness >= 20 ? 'up' : 'down'}
-            trendLabel={engagement?.stickiness_label}
+            icon={Sparkles}
+            label="AI 리포트 비율"
+            value={`${aiEfficiency?.ai_rate?.toFixed(1) ?? 0}%`}
+            subValue={`평균 ${aiEfficiency?.avg_generation_time?.toFixed(1) ?? 0}초 생성`}
             color="purple"
             loading={loading}
           />
 
-          {/* Row 2: 콘텐츠 & 도달 */}
+          {/* Row 2: AI 콘텐츠 + 사용자 행동 */}
           <MetricCard
             icon={Image}
             label="카드뉴스 생성"
@@ -249,10 +247,12 @@ export default function DashboardPage() {
             loading={loading}
           />
           <MetricCard
-            icon={Sparkles}
-            label="AI 리포트 비율"
-            value={`${aiEfficiency?.ai_rate?.toFixed(1) ?? 0}%`}
-            subValue={`평균 ${aiEfficiency?.avg_generation_time?.toFixed(1) ?? 0}초 생성`}
+            icon={Activity}
+            label="고착도 (Stickiness)"
+            value={`${engagement?.stickiness?.toFixed(1) ?? 0}%`}
+            subValue={`DAU ${engagement?.dau ?? 0} / MAU ${engagement?.mau ?? 0}`}
+            trend={engagement && engagement.stickiness >= 20 ? 'up' : 'down'}
+            trendLabel={engagement?.stickiness_label}
             color="purple"
             loading={loading}
           />
@@ -265,7 +265,7 @@ export default function DashboardPage() {
             loading={loading}
           />
 
-          {/* Row 3: 수익화 & 운영 */}
+          {/* Row 3: 수익화 + 시스템 */}
           <MetricCard
             icon={DollarSign}
             label="헤비유저"
@@ -277,10 +277,10 @@ export default function DashboardPage() {
           />
           <MetricCard
             icon={CreditCard}
-            label="운영 비용"
-            value={`$${costBreakdown?.total_cost_month?.toFixed(2) ?? 0}`}
-            subValue={`AI $${costBreakdown?.ai_cost_month?.toFixed(2) ?? 0} / 리포트당 $${costBreakdown?.cost_per_report?.toFixed(4) ?? 0}`}
-            color="red"
+            label="AI 비용 (Claude)"
+            value={`$${costBreakdown?.ai_cost_month?.toFixed(4) ?? 0}`}
+            subValue={`리포트당 $${costBreakdown?.cost_per_report?.toFixed(4) ?? 0}`}
+            color="purple"
             loading={loading}
           />
           <MetricCard

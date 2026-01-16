@@ -212,13 +212,43 @@ export default function AIIntelligencePage() {
       alert: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300',
       playbook: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300',
       message: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
+      report: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300',
     };
-    const labels = { daily: '일일', alert: '알림', playbook: 'Playbook', message: '메시지' };
+    const labels = { daily: '브리핑', alert: '알림', playbook: '플레이북', message: '메시지', report: '리포트' };
     return (
       <Badge className={styles[type as keyof typeof styles] || 'bg-gray-100'}>
         {labels[type as keyof typeof labels] || type}
       </Badge>
     );
+  };
+
+  const getProviderBadge = (provider: string) => {
+    if (provider === 'claude') {
+      return (
+        <Badge variant="outline" className="border-orange-300 text-orange-600 text-xs">
+          Claude
+        </Badge>
+      );
+    }
+    return (
+      <Badge variant="outline" className="border-blue-300 text-blue-600 text-xs">
+        Gemini
+      </Badge>
+    );
+  };
+
+  // 대상 표시 (유형에 따라 다르게)
+  const getLogTarget = (log: AIIntelligenceLog) => {
+    if (log.academy_name) return log.academy_name;
+    // 유형별 기본 표시
+    const defaults: Record<string, string> = {
+      daily: '전체 시스템',
+      alert: '시스템 알림',
+      playbook: '-',
+      message: '-',
+      report: '-',
+    };
+    return defaults[log.type] || '-';
   };
 
   const getSituationType = (daysInactive: number) => {
@@ -257,7 +287,7 @@ export default function AIIntelligencePage() {
         </div>
 
         {/* 상단 카드 그리드 */}
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
           {/* Critical Alerts */}
           <Card className="border-red-200 dark:border-red-900">
             <CardHeader className="pb-2">
@@ -330,12 +360,12 @@ export default function AIIntelligencePage() {
             </CardContent>
           </Card>
 
-          {/* AI Cost */}
-          <Card>
+          {/* Claude Cost */}
+          <Card className="border-orange-200 dark:border-orange-900">
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2 text-sm font-medium">
-                <DollarSign className="h-4 w-4 text-yellow-500" />
-                이번 달 AI 비용
+                <DollarSign className="h-4 w-4 text-orange-500" />
+                Claude 비용
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -343,12 +373,35 @@ export default function AIIntelligencePage() {
                 <Skeleton className="h-8 w-16" />
               ) : (
                 <>
-                  <p className="text-2xl font-bold">
-                    ${costSummary?.total_cost_usd.toFixed(4) || '0.00'}
+                  <p className="text-2xl font-bold text-orange-600">
+                    ${costSummary?.claude?.total_cost_usd.toFixed(4) || '0.0000'}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {costSummary?.total_requests || 0}회 요청 /{' '}
-                    {(costSummary?.total_tokens || 0).toLocaleString()} 토큰
+                    {costSummary?.claude?.request_count || 0}회 / {(costSummary?.claude?.total_tokens || 0).toLocaleString()} 토큰
+                  </p>
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Gemini Cost */}
+          <Card className="border-blue-200 dark:border-blue-900">
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-2 text-sm font-medium">
+                <DollarSign className="h-4 w-4 text-blue-500" />
+                Gemini 비용
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <Skeleton className="h-8 w-16" />
+              ) : (
+                <>
+                  <p className="text-2xl font-bold text-blue-600">
+                    ${costSummary?.gemini?.total_cost_usd.toFixed(4) || '0.0000'}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {costSummary?.gemini?.request_count || 0}회 / {(costSummary?.gemini?.total_tokens || 0).toLocaleString()} 토큰
                   </p>
                 </>
               )}
@@ -558,8 +611,9 @@ export default function AIIntelligencePage() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">전체</SelectItem>
-                        <SelectItem value="daily">일일 인텔리전스</SelectItem>
-                        <SelectItem value="playbook">Playbook</SelectItem>
+                        <SelectItem value="report">리포트</SelectItem>
+                        <SelectItem value="daily">일일 브리핑</SelectItem>
+                        <SelectItem value="playbook">플레이북</SelectItem>
                         <SelectItem value="message">메시지</SelectItem>
                       </SelectContent>
                     </Select>
@@ -591,33 +645,27 @@ export default function AIIntelligencePage() {
                         <TableRow>
                           <TableHead>유형</TableHead>
                           <TableHead>대상</TableHead>
-                          <TableHead>토큰</TableHead>
+                          <TableHead className="text-right">토큰</TableHead>
                           <TableHead>생성일</TableHead>
-                          <TableHead>조치</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {logs.map((log) => (
                           <TableRow key={log.id}>
-                            <TableCell>{getLogTypeBadge(log.type)}</TableCell>
                             <TableCell>
-                              {log.academy_name || '-'}
+                              <div className="flex items-center gap-1.5">
+                                {getLogTypeBadge(log.type)}
+                                {getProviderBadge(log.provider)}
+                              </div>
                             </TableCell>
-                            <TableCell className="text-sm text-muted-foreground">
-                              {log.input_tokens + log.output_tokens}
+                            <TableCell className="text-muted-foreground">
+                              {getLogTarget(log)}
+                            </TableCell>
+                            <TableCell className="text-right tabular-nums text-sm text-muted-foreground">
+                              {(log.input_tokens + log.output_tokens).toLocaleString()}
                             </TableCell>
                             <TableCell className="text-sm text-muted-foreground">
                               {formatKSTDate(log.created_at)}
-                            </TableCell>
-                            <TableCell>
-                              {log.action_taken ? (
-                                <Badge variant="default" className="bg-green-600">
-                                  <CheckCircle className="mr-1 h-3 w-3" />
-                                  완료
-                                </Badge>
-                              ) : (
-                                <Badge variant="secondary">대기</Badge>
-                              )}
                             </TableCell>
                           </TableRow>
                         ))}
