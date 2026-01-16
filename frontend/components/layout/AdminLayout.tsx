@@ -13,11 +13,16 @@ import {
   Menu,
   Search,
   ChevronDown,
+  ChevronRight,
   Moon,
   Sun,
   BarChart3,
   RotateCcw,
   Brain,
+  Megaphone,
+  HelpCircle,
+  Layers,
+  MessageSquare,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
@@ -32,7 +37,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -43,13 +48,29 @@ interface AdminLayoutProps {
 // Phase 2 완료 시 true로 변경하여 인사이트 지표 메뉴 활성화
 const ENABLE_METRICS_PAGE = false;
 
-const menuItems = [
+interface MenuItem {
+  href?: string;
+  label: string;
+  icon: any;
+  children?: MenuItem[];
+}
+
+const menuItems: MenuItem[] = [
   { href: '/dashboard', label: '대시보드', icon: LayoutDashboard },
   // 인사이트 지표 - Phase 2 완료 시 활성화 (ENABLE_METRICS_PAGE = true)
   ...(ENABLE_METRICS_PAGE ? [{ href: '/metrics', label: '인사이트 지표', icon: BarChart3 }] : []),
   { href: '/ai-intelligence', label: 'AI 인텔리전스', icon: Brain },
   { href: '/business-metrics', label: '비즈니스 지표', icon: BarChart3 },
   { href: '/academies', label: '학원 관리', icon: Building2 },
+  {
+    label: '서비스 운영',
+    icon: Layers,
+    children: [
+      { href: '/service-ops/announcements', label: '공지사항 관리', icon: Megaphone },
+      { href: '/service-ops/faqs', label: 'FAQ 관리', icon: HelpCircle },
+      { href: '/service-ops/banners', label: '팝업/배너 관리', icon: MessageSquare },
+    ],
+  },
   { href: '/recovery', label: '복구/수정 센터', icon: RotateCcw },
   { href: '/legal', label: '법무 관리', icon: Scale },
   { href: '/notifications', label: '알림 관리', icon: Bell },
@@ -57,14 +78,89 @@ const menuItems = [
 ];
 
 function NavItems({ pathname, onItemClick }: { pathname: string; onItemClick?: () => void }) {
+  const [expandedMenus, setExpandedMenus] = useState<Set<string>>(new Set());
+
+  // 현재 경로가 서비스 운영 하위인 경우 자동 확장
+  useEffect(() => {
+    if (pathname.startsWith('/service-ops')) {
+      setExpandedMenus((prev) => new Set([...prev, '서비스 운영']));
+    }
+  }, [pathname]);
+
+  const toggleMenu = (label: string) => {
+    setExpandedMenus((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(label)) {
+        newSet.delete(label);
+      } else {
+        newSet.add(label);
+      }
+      return newSet;
+    });
+  };
+
   return (
     <nav className="flex-1 space-y-1 p-4">
       {menuItems.map((item) => {
+        // 하위 메뉴가 있는 경우 (그룹 메뉴)
+        if (item.children) {
+          const isExpanded = expandedMenus.has(item.label);
+          const isChildActive = item.children.some(
+            (child) => pathname === child.href || pathname.startsWith(child.href + '/')
+          );
+
+          return (
+            <div key={item.label}>
+              <button
+                onClick={() => toggleMenu(item.label)}
+                className={cn(
+                  'flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all',
+                  isChildActive
+                    ? 'text-primary'
+                    : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                )}
+              >
+                <item.icon className="h-5 w-5" />
+                <span className="flex-1 text-left">{item.label}</span>
+                {isExpanded ? (
+                  <ChevronDown className="h-4 w-4" />
+                ) : (
+                  <ChevronRight className="h-4 w-4" />
+                )}
+              </button>
+              {isExpanded && (
+                <div className="ml-4 mt-1 space-y-1 border-l-2 border-muted pl-3">
+                  {item.children.map((child) => {
+                    const isActive = pathname === child.href || pathname.startsWith(child.href + '/');
+                    return (
+                      <Link
+                        key={child.href}
+                        href={child.href!}
+                        onClick={onItemClick}
+                        className={cn(
+                          'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all',
+                          isActive
+                            ? 'bg-primary text-primary-foreground shadow-sm'
+                            : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                        )}
+                      >
+                        <child.icon className="h-4 w-4" />
+                        {child.label}
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        }
+
+        // 일반 메뉴 아이템
         const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
         return (
           <Link
             key={item.href}
-            href={item.href}
+            href={item.href!}
             onClick={onItemClick}
             className={cn(
               'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all',
@@ -191,6 +287,10 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                   </Button>
                 </SheetTrigger>
                 <SheetContent side="left" className="w-64 p-0">
+                  <SheetTitle className="sr-only">네비게이션 메뉴</SheetTitle>
+                  <SheetDescription className="sr-only">
+                    TutorNote Master Admin 메뉴
+                  </SheetDescription>
                   <SidebarContent
                     pathname={pathname}
                     onItemClick={() => setSheetOpen(false)}

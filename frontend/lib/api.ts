@@ -1048,3 +1048,273 @@ export const aiIntelligenceApi = {
   getTodayInsights: () =>
     fetchApi<AITodayInsights>('/api/admin/ai/today-insights'),
 };
+
+// =============================================================================
+// Phase 4: 서비스 운영 도구 API
+// =============================================================================
+
+// 공지사항 Types
+export interface Announcement {
+  id: number;
+  category: 'update' | 'notice' | 'tip';
+  title: string;
+  content: string;
+  is_new: boolean;
+  is_published: boolean;
+  sort_order: number;
+  published_at: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AnnouncementInput {
+  category: 'update' | 'notice' | 'tip';
+  title: string;
+  content: string;
+  is_new?: boolean;
+  is_published?: boolean;
+  sort_order?: number;
+  published_at?: string;
+}
+
+// FAQ Types
+export interface FAQCategory {
+  id: number;
+  name: string;
+  icon: string;
+  sort_order: number;
+  created_at: string;
+}
+
+export interface FAQ {
+  id: number;
+  category_id: number;
+  category_name?: string;
+  category_icon?: string;
+  question: string;
+  answer: string;
+  is_published: boolean;
+  sort_order: number;
+  view_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface FAQInput {
+  category_id: number;
+  question: string;
+  answer: string;
+  is_published?: boolean;
+  sort_order?: number;
+}
+
+// 이벤트 배너 Types
+export interface EventBanner {
+  id: number;
+  type: 'top_banner' | 'card_banner';
+  title: string;
+  content: string;
+  background_color: string;
+  text_color: string;
+  image_url: string | null;
+  link_url: string | null;
+  link_text: string | null;
+  start_date: string;
+  end_date: string;
+  is_active: boolean;
+  is_dismissible: boolean;
+  priority: number;
+  status?: 'active' | 'scheduled' | 'expired' | 'inactive';
+  created_at: string;
+  updated_at: string;
+}
+
+export interface EventBannerInput {
+  type: 'top_banner' | 'card_banner';
+  title: string;
+  content?: string;
+  background_color?: string;
+  text_color?: string;
+  image_url?: string;
+  link_url?: string;
+  link_text?: string;
+  start_date: string;
+  end_date: string;
+  is_active?: boolean;
+  is_dismissible?: boolean;
+  priority?: number;
+}
+
+// 공지사항 API
+export const announcementsApi = {
+  list: (category?: string, is_published?: boolean) => {
+    const params = new URLSearchParams();
+    if (category) params.append('category', category);
+    if (is_published !== undefined) params.append('is_published', String(is_published));
+
+    return fetchApi<{ success: boolean; data: Announcement[] }>(
+      `/api/admin/announcements?${params.toString()}`
+    );
+  },
+
+  get: (id: number) =>
+    fetchApi<{ success: boolean; data: Announcement }>(`/api/admin/announcements/${id}`),
+
+  create: (data: AnnouncementInput) =>
+    fetchApi<{ success: boolean; data: { id: number } }>(
+      '/api/admin/announcements',
+      {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }
+    ),
+
+  update: (id: number, data: AnnouncementInput) =>
+    fetchApi<{ success: boolean }>(
+      `/api/admin/announcements/${id}`,
+      {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }
+    ),
+
+  delete: (id: number) =>
+    fetchApi<{ success: boolean }>(
+      `/api/admin/announcements/${id}`,
+      { method: 'DELETE' }
+    ),
+
+  reorder: (items: { id: number; sort_order: number }[]) =>
+    fetchApi<{ success: boolean }>(
+      '/api/admin/announcements/reorder',
+      {
+        method: 'PATCH',
+        body: JSON.stringify({ items }),
+      }
+    ),
+};
+
+// FAQ API
+export const faqApi = {
+  // 카테고리
+  getCategories: () =>
+    fetchApi<{ success: boolean; data: FAQCategory[] }>('/api/admin/faq-categories'),
+
+  createCategory: (data: { name: string; icon: string; sort_order?: number }) =>
+    fetchApi<{ success: boolean; data: { id: number } }>(
+      '/api/admin/faq-categories',
+      {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }
+    ),
+
+  updateCategory: (id: number, data: { name: string; icon: string; sort_order?: number }) =>
+    fetchApi<{ success: boolean }>(
+      `/api/admin/faq-categories/${id}`,
+      {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }
+    ),
+
+  deleteCategory: (id: number) =>
+    fetchApi<{ success: boolean }>(
+      `/api/admin/faq-categories/${id}`,
+      { method: 'DELETE' }
+    ),
+
+  // FAQ
+  list: (category_id?: number, is_published?: boolean) => {
+    const params = new URLSearchParams();
+    if (category_id) params.append('category_id', String(category_id));
+    if (is_published !== undefined) params.append('is_published', String(is_published));
+
+    return fetchApi<{ success: boolean; data: FAQ[] }>(
+      `/api/admin/faqs?${params.toString()}`
+    );
+  },
+
+  get: (id: number) =>
+    fetchApi<{ success: boolean; data: FAQ }>(`/api/admin/faqs/${id}`),
+
+  create: (data: FAQInput) =>
+    fetchApi<{ success: boolean; data: { id: number } }>(
+      '/api/admin/faqs',
+      {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }
+    ),
+
+  update: (id: number, data: FAQInput) =>
+    fetchApi<{ success: boolean }>(
+      `/api/admin/faqs/${id}`,
+      {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }
+    ),
+
+  delete: (id: number) =>
+    fetchApi<{ success: boolean }>(
+      `/api/admin/faqs/${id}`,
+      { method: 'DELETE' }
+    ),
+
+  reorder: (items: { id: number; sort_order: number }[]) =>
+    fetchApi<{ success: boolean }>(
+      '/api/admin/faqs/reorder',
+      {
+        method: 'PATCH',
+        body: JSON.stringify({ items }),
+      }
+    ),
+};
+
+// 이벤트 배너 API
+export const bannersApi = {
+  list: (type?: string, is_active?: boolean, status?: string) => {
+    const params = new URLSearchParams();
+    if (type) params.append('type', type);
+    if (is_active !== undefined) params.append('is_active', String(is_active));
+    if (status) params.append('status', status);
+
+    return fetchApi<{ success: boolean; data: EventBanner[] }>(
+      `/api/admin/banners?${params.toString()}`
+    );
+  },
+
+  get: (id: number) =>
+    fetchApi<{ success: boolean; data: EventBanner }>(`/api/admin/banners/${id}`),
+
+  create: (data: EventBannerInput) =>
+    fetchApi<{ success: boolean; data: { id: number } }>(
+      '/api/admin/banners',
+      {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }
+    ),
+
+  update: (id: number, data: EventBannerInput) =>
+    fetchApi<{ success: boolean }>(
+      `/api/admin/banners/${id}`,
+      {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }
+    ),
+
+  delete: (id: number) =>
+    fetchApi<{ success: boolean }>(
+      `/api/admin/banners/${id}`,
+      { method: 'DELETE' }
+    ),
+
+  duplicate: (id: number) =>
+    fetchApi<{ success: boolean; data: { id: number } }>(
+      `/api/admin/banners/${id}/duplicate`,
+      { method: 'POST' }
+    ),
+};
