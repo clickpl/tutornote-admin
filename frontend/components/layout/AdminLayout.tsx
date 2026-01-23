@@ -11,7 +11,6 @@ import {
   Settings,
   LogOut,
   Menu,
-  Search,
   ChevronDown,
   ChevronRight,
   Moon,
@@ -298,18 +297,6 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                   />
                 </SheetContent>
               </Sheet>
-
-              {/* Search */}
-              <div className="hidden md:block">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    type="search"
-                    placeholder="검색..."
-                    className="w-64 pl-9"
-                  />
-                </div>
-              </div>
             </div>
 
             <div className="flex items-center gap-2">
