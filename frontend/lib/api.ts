@@ -734,6 +734,7 @@ export interface AtRiskAcademy {
   student_count: number;
   report_count: number;
   last_activity: string | null;
+  last_activity_type?: 'login' | 'report' | 'attendance' | 'student' | 'progress' | 'signup';
   inactive_days: number;
   signup_date: string;
   risk_level: 'critical' | 'warning' | 'caution';

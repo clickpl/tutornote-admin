@@ -65,6 +65,7 @@ def get_at_risk_academies():
             LEFT JOIN progress_records pr ON s.id = pr.student_id AND pr.is_deleted = 0
             LEFT JOIN activity_logs al ON a.id = al.academy_id
             WHERE a.is_deleted = 0
+            AND a.created_at < NOW() - INTERVAL 7 DAY
             AND NOT EXISTS (
                 SELECT 1 FROM activity_logs al2
                 WHERE al2.academy_id = a.id
