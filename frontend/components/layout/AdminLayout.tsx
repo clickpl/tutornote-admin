@@ -22,6 +22,7 @@ import {
   HelpCircle,
   Layers,
   MessageSquare,
+  CreditCard,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
@@ -60,6 +61,7 @@ const menuItems: MenuItem[] = [
   ...(ENABLE_METRICS_PAGE ? [{ href: '/metrics', label: '인사이트 지표', icon: BarChart3 }] : []),
   { href: '/ai-intelligence', label: 'AI 인텔리전스', icon: Brain },
   { href: '/business-metrics', label: '비즈니스 지표', icon: BarChart3 },
+  { href: '/billing', label: '결제 관리', icon: CreditCard },
   { href: '/academies', label: '학원 관리', icon: Building2 },
   {
     label: '서비스 운영',

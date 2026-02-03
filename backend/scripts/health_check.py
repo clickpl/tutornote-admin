@@ -19,6 +19,14 @@ from datetime import datetime
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, PROJECT_ROOT)
 
+# .env 파일 로드
+try:
+    from dotenv import load_dotenv
+    env_path = os.path.join(PROJECT_ROOT, '.env')
+    load_dotenv(env_path)
+except ImportError:
+    pass  # dotenv 없으면 환경변수에서 직접 읽음
+
 try:
     import psutil
 except ImportError:
@@ -121,8 +129,9 @@ def check_and_alert_cpu(cpu_usage):
                 'severity': 'critical',
                 'title': f'CPU 사용률 위험: {cpu_usage:.1f}%',
                 'description': f'현재 CPU 사용률이 {cpu_usage:.1f}%로 매우 높습니다. 시스템 성능 저하 위험.',
-                'action': 'Backend 재시작 또는 프로세스 확인이 필요합니다.'
-            })
+                'action': 'Backend 재시작 또는 프로세스 확인이 필요합니다.',
+                'metadata': {'cpu_usage': cpu_usage, 'threshold': cpu_critical, 'alert_type': 'cpu'}
+            }, notification_type='server_check')
             return 'critical'
 
     elif cpu_usage > cpu_warning:
@@ -134,8 +143,9 @@ def check_and_alert_cpu(cpu_usage):
                 'severity': 'warning',
                 'title': f'CPU 사용률 주의: {cpu_usage:.1f}%',
                 'description': f'CPU 사용률이 {cpu_usage:.1f}%입니다. 모니터링이 필요합니다.',
-                'action': '프로세스 상태를 확인해주세요.'
-            })
+                'action': '프로세스 상태를 확인해주세요.',
+                'metadata': {'cpu_usage': cpu_usage, 'threshold': cpu_warning, 'alert_type': 'cpu'}
+            }, notification_type='server_check')
             return 'warning'
 
     return None
@@ -155,8 +165,9 @@ def check_and_alert_ram(ram_usage):
                 'severity': 'critical',
                 'title': f'RAM 사용률 위험: {ram_usage:.1f}%',
                 'description': f'현재 RAM 사용률이 {ram_usage:.1f}%로 매우 높습니다. 메모리 부족 위험.',
-                'action': '메모리 누수 확인 또는 서버 재시작이 필요합니다.'
-            })
+                'action': '메모리 누수 확인 또는 서버 재시작이 필요합니다.',
+                'metadata': {'ram_usage': ram_usage, 'threshold': ram_critical, 'alert_type': 'ram'}
+            }, notification_type='server_check')
             return 'critical'
 
     elif ram_usage > ram_warning:
@@ -168,8 +179,9 @@ def check_and_alert_ram(ram_usage):
                 'severity': 'warning',
                 'title': f'RAM 사용률 주의: {ram_usage:.1f}%',
                 'description': f'RAM 사용률이 {ram_usage:.1f}%입니다. 모니터링이 필요합니다.',
-                'action': '메모리 사용량을 확인해주세요.'
-            })
+                'action': '메모리 사용량을 확인해주세요.',
+                'metadata': {'ram_usage': ram_usage, 'threshold': ram_warning, 'alert_type': 'ram'}
+            }, notification_type='server_check')
             return 'warning'
 
     return None
@@ -189,8 +201,9 @@ def check_and_alert_disk(disk_usage):
                 'severity': 'critical',
                 'title': f'디스크 공간 부족: {disk_usage:.1f}%',
                 'description': f'현재 디스크 사용률이 {disk_usage:.1f}%로 매우 높습니다. 서비스 장애 위험.',
-                'action': '로그 파일 정리 또는 디스크 확장이 필요합니다.'
-            })
+                'action': '로그 파일 정리 또는 디스크 확장이 필요합니다.',
+                'metadata': {'disk_usage': disk_usage, 'threshold': disk_critical, 'alert_type': 'disk'}
+            }, notification_type='server_check')
             return 'critical'
 
     elif disk_usage > disk_warning:
@@ -202,8 +215,9 @@ def check_and_alert_disk(disk_usage):
                 'severity': 'warning',
                 'title': f'디스크 공간 주의: {disk_usage:.1f}%',
                 'description': f'디스크 사용률이 {disk_usage:.1f}%입니다. 정리가 필요합니다.',
-                'action': '불필요한 파일을 정리해주세요.'
-            })
+                'action': '불필요한 파일을 정리해주세요.',
+                'metadata': {'disk_usage': disk_usage, 'threshold': disk_warning, 'alert_type': 'disk'}
+            }, notification_type='server_check')
             return 'warning'
 
     return None

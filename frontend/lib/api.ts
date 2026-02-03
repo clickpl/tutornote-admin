@@ -1319,3 +1319,182 @@ export const bannersApi = {
       { method: 'POST' }
     ),
 };
+
+// =============================================================================
+// 알림 관리 API (카카오 알림톡 + 텔레그램)
+// =============================================================================
+
+import type {
+  KakaoMetrics,
+  KakaoChartData,
+  KakaoTemplate,
+  KakaoHistoryResponse,
+  KakaoHistoryFilters,
+  TelegramStatus,
+  TelegramChartData,
+  TelegramErrorResponse,
+  TelegramErrorFilters,
+  TelegramConfigUpdate,
+} from '@/app/notifications/_lib/types';
+
+export const notificationsApi = {
+  // 카카오 알림톡
+  kakao: {
+    getMetrics: () =>
+      fetchApi<KakaoMetrics>('/api/admin/notifications/kakao/metrics'),
+
+    getChart: (days = 7) =>
+      fetchApi<{ data: KakaoChartData[] }>(`/api/admin/notifications/kakao/chart?days=${days}`),
+
+    getTemplates: () =>
+      fetchApi<{ templates: KakaoTemplate[] }>('/api/admin/notifications/kakao/templates'),
+
+    getHistory: (page = 1, filters?: KakaoHistoryFilters) => {
+      const params = new URLSearchParams({
+        page: String(page),
+        page_size: '20',
+      });
+      if (filters?.academy_id) params.append('academy_id', String(filters.academy_id));
+      if (filters?.template_code) params.append('template_code', filters.template_code);
+      if (filters?.status) params.append('status', filters.status);
+      if (filters?.date_from) params.append('date_from', filters.date_from);
+      if (filters?.date_to) params.append('date_to', filters.date_to);
+
+      return fetchApi<KakaoHistoryResponse>(`/api/admin/notifications/kakao/history?${params.toString()}`);
+    },
+  },
+
+  // 텔레그램 알림
+  telegram: {
+    getStatus: () =>
+      fetchApi<{ types: TelegramStatus[] }>('/api/admin/notifications/telegram/status'),
+
+    getChart: (hours = 24) =>
+      fetchApi<{ data: TelegramChartData[] }>(`/api/admin/notifications/telegram/chart?hours=${hours}`),
+
+    getErrors: (page = 1, filters?: TelegramErrorFilters) => {
+      const params = new URLSearchParams({
+        page: String(page),
+        page_size: '20',
+      });
+      if (filters?.severity) params.append('severity', filters.severity);
+      if (filters?.error_code) params.append('error_code', filters.error_code);
+      if (filters?.academy_id) params.append('academy_id', String(filters.academy_id));
+      if (filters?.date_from) params.append('date_from', filters.date_from);
+      if (filters?.date_to) params.append('date_to', filters.date_to);
+
+      return fetchApi<TelegramErrorResponse>(`/api/admin/notifications/telegram/errors?${params.toString()}`);
+    },
+
+    updateConfig: (data: TelegramConfigUpdate) =>
+      fetchApi<{ success: boolean; message: string; config: TelegramStatus }>(
+        '/api/admin/notifications/telegram/config',
+        {
+          method: 'PUT',
+          body: JSON.stringify(data),
+        }
+      ),
+  },
+};
+
+// ============================================================================
+// 결제 관리 API
+// ============================================================================
+
+export interface BillingDashboard {
+  mrr: number;
+  arr: number;
+  total_subscribers: number;
+  monthly_subscribers: number;
+  yearly_subscribers: number;
+  founding_subscribers: number;
+  churn_rate: number;
+  payment_success_rate: number;
+  total_revenue: number;
+  this_month_revenue: number;
+  credit_revenue: number;
+  pending_retries: number;
+}
+
+export interface AdminBillingSubscription {
+  id: number;
+  academy_id: number;
+  academy_name: string;
+  plan_type: 'monthly' | 'yearly';
+  amount: number;
+  is_founding_price: boolean;
+  card_company: string;
+  card_number_masked: string;
+  status: 'active' | 'expired' | 'cancelled';
+  next_billing_date: string | null;
+  retry_count: number;
+  created_at: string | null;
+}
+
+export interface AdminPaymentRecord {
+  id: number;
+  academy_id: number;
+  academy_name: string;
+  payment_key: string;
+  order_id: string;
+  type: 'subscription' | 'credit';
+  amount: number;
+  status: 'pending' | 'success' | 'failed' | 'cancelled' | 'refunded';
+  receipt_url: string | null;
+  approved_at: string | null;
+  failure_code: string | null;
+  failure_message: string | null;
+  refunded_at: string | null;
+  refund_amount: number | null;
+  created_at: string | null;
+}
+
+export interface FailedPayment {
+  id: number;
+  academy_id: number;
+  academy_name: string;
+  plan_type: 'monthly' | 'yearly';
+  amount: number;
+  retry_count: number;
+  last_retry_at: string | null;
+  next_billing_date: string | null;
+  last_error: string | null;
+}
+
+export const billingApi = {
+  getDashboard: () =>
+    fetchApi<BillingDashboard>('/api/admin/billing/dashboard'),
+
+  getSubscriptions: (page = 1, filters?: { status?: string; plan_type?: string; founding?: string }) => {
+    const params = new URLSearchParams({ page: String(page), limit: '20' });
+    if (filters?.status) params.append('status', filters.status);
+    if (filters?.plan_type) params.append('plan_type', filters.plan_type);
+    if (filters?.founding) params.append('founding', filters.founding);
+    return fetchApi<{ subscriptions: AdminBillingSubscription[]; pagination: { page: number; limit: number; total: number } }>(
+      `/api/admin/billing/subscriptions?${params.toString()}`
+    );
+  },
+
+  getPayments: (page = 1, filters?: { status?: string; type?: string; date_from?: string; date_to?: string }) => {
+    const params = new URLSearchParams({ page: String(page), limit: '20' });
+    if (filters?.status) params.append('status', filters.status);
+    if (filters?.type) params.append('type', filters.type);
+    if (filters?.date_from) params.append('date_from', filters.date_from);
+    if (filters?.date_to) params.append('date_to', filters.date_to);
+    return fetchApi<{ payments: AdminPaymentRecord[]; pagination: { page: number; limit: number; total: number } }>(
+      `/api/admin/billing/payments?${params.toString()}`
+    );
+  },
+
+  refund: (paymentKey: string, reason?: string, amount?: number) =>
+    fetchApi<{ success: boolean; payment_key: string; refund_amount: number; message: string }>(
+      '/api/admin/billing/refund',
+      {
+        method: 'POST',
+        body: JSON.stringify({ payment_key: paymentKey, reason, amount }),
+      }
+    ),
+
+  getFailedPayments: () =>
+    fetchApi<{ failed_payments: FailedPayment[]; total: number }>('/api/admin/billing/failed-payments'),
+};

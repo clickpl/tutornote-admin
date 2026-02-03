@@ -59,7 +59,14 @@ def get_at_risk_academies():
                 COUNT(DISTINCT pr.id) as report_count,
                 MAX(al.created_at) as last_activity,
                 DATEDIFF(NOW(), COALESCE(MAX(al.created_at), a.created_at)) as inactive_days,
-                a.created_at as signup_date
+                a.created_at as signup_date,
+                (
+                    SELECT al3.action_type
+                    FROM activity_logs al3
+                    WHERE al3.academy_id = a.id
+                    ORDER BY al3.created_at DESC
+                    LIMIT 1
+                ) as last_activity_type
             FROM academies a
             LEFT JOIN students s ON a.id = s.academy_id AND s.is_deleted = 0
             LEFT JOIN progress_records pr ON s.id = pr.student_id AND pr.is_deleted = 0
