@@ -66,16 +66,6 @@ EXT_001: 카카오 API 실패
 EXT_002: Claude API 실패
 EXT_003: 이미지 서버 실패
 
-# 카카오 알림톡 관련 (즉시 알림 필수)
-KAKAO_001: 알림톡 발송 실패 - 템플릿 불일치
-KAKAO_002: 알림톡 발송 실패 - 수신자 없음
-KAKAO_003: 알림톡 발송 실패 - 잔액 부족
-KAKAO_004: 알림톡 발송 실패 - 채널 차단
-KAKAO_005: 알림톡 발송 실패 - API 인증 실패
-KAKAO_006: 알림톡 발송 실패 - 서버 오류
-KAKAO_007: 카카오 API 연결 실패
-KAKAO_008: 카카오 API 타임아웃
-
 # 파일 관련
 FILE_001: 업로드 실패
 FILE_002: 파일 크기 초과
@@ -86,16 +76,6 @@ NET_001: 연결 타임아웃
 NET_002: 서버 응답 없음
 NET_003: CORS 에러
 ```
-
-### 2.4 즉시 알림 필수 에러 (중복 방지 제외)
-
-> 아래 에러는 비즈니스에 직접적인 영향을 주므로 **무조건 즉시 알림**
-
-| 에러 코드 | 설명 | 이유 |
-|----------|------|------|
-| KAKAO_001 ~ KAKAO_008 | 카카오 알림톡 발송 실패 | 학부모 알림 전달 실패 |
-| AI_004 | AI 크레딧 부족 | 서비스 이용 불가 |
-| DATA_001 | 저장 실패 | 데이터 유실 가능 |
 
 ---
 
@@ -182,82 +162,15 @@ NET_003: CORS 에러
 
 ## 5. 중복 방지 로직
 
-### 5.1 기본 규칙
+### 5.1 Deduplication 규칙
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│  동일 에러 발생 시 처리 흐름                                  │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  에러 발생 ──▶ 5분 이내 동일 에러? ──▶ YES ──▶ 카운트 증가   │
-│                       │                         │           │
-│                       ▼ NO                      ▼           │
-│                  즉시 알림 발송            5건 이상? ──▶ YES │
-│                                               │      │      │
-│                                               ▼ NO   ▼      │
-│                                            DB 기록만  요약 알림│
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
-```
+| 조건 | 쿨다운 |
+|------|--------|
+| 동일 error_code + 동일 academy_id | 5분 |
+| 동일 error_code (전체) | 1분 |
+| Critical 에러 | 중복 방지 없음 (모두 발송) |
 
-### 5.2 Deduplication 규칙
-
-| 규칙 | 설명 |
-|------|------|
-| **5분 쿨다운** | 동일 에러는 5분 이내 재발송 금지 |
-| **카운트 집계** | 5분 내 동일 에러 발생 횟수 카운트 |
-| **5건 이상 시** | 즉시 요약 알림 1회 발송 |
-| **예외** | 카카오 알림톡 실패는 항상 즉시 알림 (사유 포함) |
-
-### 5.3 구현 로직
-
-```python
-class ErrorAlertManager:
-    def __init__(self):
-        self.error_counts = {}  # {error_key: {'count': n, 'first_at': datetime}}
-        self.last_alert_time = {}  # {error_key: datetime}
-
-    def should_send_alert(self, error_code: str, academy_id: int = None) -> dict:
-        """
-        알림 발송 여부 결정
-        Returns: {'send': bool, 'type': 'immediate'|'summary'|'skip', 'count': int}
-        """
-        error_key = f"{error_code}_{academy_id or 'global'}"
-        now = datetime.now()
-
-        # 1. 카카오 알림톡 에러는 항상 즉시 발송
-        if error_code.startswith('KAKAO_'):
-            return {'send': True, 'type': 'immediate', 'count': 1}
-
-        # 2. 5분 이내 동일 에러 체크
-        if error_key in self.last_alert_time:
-            elapsed = (now - self.last_alert_time[error_key]).seconds
-            if elapsed < 300:  # 5분 = 300초
-                # 카운트 증가
-                self._increment_count(error_key)
-                count = self.error_counts[error_key]['count']
-
-                # 5건 이상이면 요약 알림
-                if count == 5:
-                    return {'send': True, 'type': 'summary', 'count': count}
-                else:
-                    return {'send': False, 'type': 'skip', 'count': count}
-
-        # 3. 첫 발생 또는 5분 경과 - 즉시 알림
-        self.last_alert_time[error_key] = now
-        self._reset_count(error_key)
-        return {'send': True, 'type': 'immediate', 'count': 1}
-
-    def _increment_count(self, error_key: str):
-        if error_key not in self.error_counts:
-            self.error_counts[error_key] = {'count': 0, 'first_at': datetime.now()}
-        self.error_counts[error_key]['count'] += 1
-
-    def _reset_count(self, error_key: str):
-        self.error_counts[error_key] = {'count': 1, 'first_at': datetime.now()}
-```
-
-### 5.4 Rate Limiting
+### 5.2 Rate Limiting
 
 ```
 - 분당 최대 발송: 10건
@@ -265,284 +178,18 @@ class ErrorAlertManager:
 - 초과 시: 집계하여 1시간 뒤 요약 발송
 ```
 
-### 5.5 요약 알림 메시지 포맷
+### 5.3 Alert Suppression (알림 억제)
 
-```
-⚠️ [반복 에러 감지] AI_001
-
-━━━━━━━━━━━━━━━━━━━━━
-🔄 5분 내 5건 이상 발생
-
-• 에러: Claude API 타임아웃
-• 발생 횟수: 7건
-• 최초 발생: 13:25:00
-• 최근 발생: 13:29:45
-
-━━━━━━━━━━━━━━━━━━━━━
-🤖 AI 분석 (Gemini)
-• 긴급도: 높음
-• 원인 추정: Claude API 서버 과부하
-• 권장 조치: API 재시도 간격 증가, 폴백 로직 활성화
-
-━━━━━━━━━━━━━━━━━━━━━
-📊 영향 범위
-• 영향받은 학원: 3개
-• 영향받은 사용자: 5명
+```python
+# 동일 에러가 짧은 시간 내 대량 발생 시
+if same_error_count >= 5 in last_5_minutes:
+    send_summary_alert()  # "AI_001 에러 5건 이상 발생 중"
+    suppress_individual_alerts(duration=10min)
 ```
 
 ---
 
-## 6. Gemini AI 에러 분석
-
-> 에러 발생 시 Gemini API로 자동 분석하여 긴급도 판단 및 조치 방법 가이드
-
-### 6.1 분석 목적
-
-| 항목 | 설명 |
-|------|------|
-| **긴급도 분석** | 에러의 심각성을 AI가 판단 (critical/high/medium/low) |
-| **원인 추정** | 에러 메시지와 스택 트레이스 기반 원인 분석 |
-| **조치 가이드** | 구체적인 해결 방법 제안 |
-| **영향 범위 예측** | 사용자/서비스에 미치는 영향 예측 |
-
-### 6.2 분석에 사용되는 데이터
-
-> 정확한 분석을 위해 현재 에러 + 과거 에러 로그를 함께 분석
-
-| 데이터 | 설명 | 용도 |
-|--------|------|------|
-| **현재 에러** | 방금 발생한 에러 정보 | 즉각적인 원인 파악 |
-| **스택 트레이스** | 에러 발생 경로 | 코드 레벨 원인 분석 |
-| **최근 유사 에러** | 24시간 내 동일 error_code | 패턴 분석, 재발 여부 |
-| **연관 에러** | 같은 시간대 다른 에러들 | 연쇄 장애 파악 |
-| **과거 해결 이력** | 이전에 같은 에러 해결 방법 | 검증된 조치 방법 제안 |
-
-### 6.3 Gemini API 호출
-
-```python
-def analyze_error_with_gemini(error_data: dict, error_logs: list) -> dict:
-    """
-    Gemini API로 에러 분석 (에러 로그 포함)
-    """
-    # 1. 최근 24시간 유사 에러 조회
-    recent_similar = get_recent_errors(
-        error_code=error_data['error_code'],
-        hours=24,
-        limit=10
-    )
-
-    # 2. 같은 시간대(±5분) 다른 에러 조회
-    related_errors = get_related_errors(
-        timestamp=error_data['timestamp'],
-        minutes=5,
-        limit=5
-    )
-
-    # 3. 과거 해결 이력 조회
-    resolution_history = get_resolution_history(
-        error_code=error_data['error_code'],
-        limit=3
-    )
-
-    prompt = f"""
-    다음 서비스 에러를 분석해주세요.
-
-    [현재 에러]
-    - 코드: {error_data['error_code']}
-    - 메시지: {error_data['message']}
-    - 발생 위치: {error_data['page_url']}
-    - 작업: {error_data['action']}
-    - 스택 트레이스:
-    {error_data.get('stack_trace', 'N/A')}
-
-    [최근 24시간 유사 에러 ({len(recent_similar)}건)]
-    {format_error_list(recent_similar)}
-
-    [같은 시간대 연관 에러]
-    {format_error_list(related_errors)}
-
-    [과거 해결 이력]
-    {format_resolution_history(resolution_history)}
-
-    위 정보를 종합하여 다음 형식으로 분석해주세요:
-    1. 긴급도: [critical/high/medium/low]
-    2. 원인 추정: [스택 트레이스와 패턴 기반 분석]
-    3. 재발 여부: [과거 에러와 비교하여 재발인지, 신규인지]
-    4. 권장 조치: [과거 해결 이력 참고하여 구체적인 조치 방법]
-    5. 영향 범위: [연관 에러 고려한 영향 범위]
-    6. 근본 원인: [연쇄 장애 가능성 분석]
-    """
-
-    response = gemini_client.generate_content(prompt)
-
-    return parse_gemini_response(response)
-
-
-def get_recent_errors(error_code: str, hours: int, limit: int) -> list:
-    """최근 N시간 내 동일 에러 코드 조회"""
-    return db.query("""
-        SELECT error_code, message, stack_trace, created_at,
-               academy_name, page_url, action
-        FROM error_logs
-        WHERE error_code = %s
-        AND created_at >= NOW() - INTERVAL %s HOUR
-        ORDER BY created_at DESC
-        LIMIT %s
-    """, (error_code, hours, limit))
-
-
-def get_related_errors(timestamp: datetime, minutes: int, limit: int) -> list:
-    """같은 시간대 다른 에러 조회 (연쇄 장애 파악)"""
-    return db.query("""
-        SELECT error_code, message, severity, created_at
-        FROM error_logs
-        WHERE created_at BETWEEN %s - INTERVAL %s MINUTE
-                            AND %s + INTERVAL %s MINUTE
-        ORDER BY created_at DESC
-        LIMIT %s
-    """, (timestamp, minutes, timestamp, minutes, limit))
-
-
-def get_resolution_history(error_code: str, limit: int) -> list:
-    """과거 동일 에러 해결 이력 조회"""
-    return db.query("""
-        SELECT error_code, message, resolution_note, resolved_at
-        FROM error_logs
-        WHERE error_code = %s
-        AND resolution_note IS NOT NULL
-        ORDER BY resolved_at DESC
-        LIMIT %s
-    """, (error_code, limit))
-```
-
-### 6.4 분석 결과 구조
-
-```python
-{
-    "urgency": "high",  # critical, high, medium, low
-    "urgency_reason": "사용자가 핵심 기능을 사용할 수 없음",
-
-    "estimated_cause": "Claude API 서버의 일시적 과부하로 인한 타임아웃",
-    "stack_analysis": "timeout 발생 지점: claude_client.py:142 generate_content()",
-
-    "is_recurring": True,  # 재발 여부
-    "recurrence_info": {
-        "first_occurred": "2026-01-20 14:30:00",
-        "occurrence_count": 5,
-        "pattern": "주로 오후 2-4시 사이 발생 (트래픽 피크 시간)"
-    },
-
-    "root_cause": {  # 근본 원인 분석
-        "analysis": "Claude API 동시 요청 제한 초과 가능성",
-        "related_errors": ["NET_001 타임아웃 2건 동시 발생"],
-        "chain_failure": False  # 연쇄 장애 여부
-    },
-
-    "recommended_actions": [
-        "Claude API 상태 페이지 확인 (status.anthropic.com)",
-        "재시도 로직의 타임아웃 값 증가 (30초 → 60초)",
-        "요청 큐잉 및 Rate Limiting 적용 검토"
-    ],
-
-    "past_resolution": {  # 과거 해결 이력 참고
-        "similar_case": "2026-01-15 동일 에러",
-        "resolution": "Claude API 키 갱신으로 해결",
-        "applicable": False  # 이번 케이스에 적용 가능 여부
-    },
-
-    "impact": {
-        "user_impact": "리포트 생성 불가",
-        "service_impact": "AI 리포트 기능 일시 중단",
-        "affected_academies": 3,
-        "affected_users": 5
-    }
-}
-```
-
-### 6.4 긴급도 기준
-
-| 긴급도 | 설명 | 예시 |
-|--------|------|------|
-| **critical** | 서비스 전체 중단 | DB 연결 실패, 서버 다운 |
-| **high** | 핵심 기능 사용 불가 | 리포트 생성 실패, 로그인 불가 |
-| **medium** | 부분 기능 영향 | 이미지 업로드 실패, 알림 발송 지연 |
-| **low** | 사소한 문제 | UI 깨짐, 로딩 지연 |
-
-### 6.5 텔레그램 메시지에 AI 분석 포함
-
-```
-🚨 [서비스 에러] AI_001
-
-━━━━━━━━━━━━━━━━━━━━━
-📍 발생 위치
-• 학원: 피아노포레 (ID: 123)
-• 페이지: /reports/create
-
-━━━━━━━━━━━━━━━━━━━━━
-❌ 에러 내용
-• 코드: AI_001
-• 메시지: Claude API 타임아웃
-
-━━━━━━━━━━━━━━━━━━━━━
-🤖 AI 분석 (Gemini)
-• 긴급도: 🔴 HIGH
-• 원인: Claude API 서버 과부하 추정
-• 영향: 리포트 생성 기능 일시 중단
-
-━━━━━━━━━━━━━━━━━━━━━
-💡 권장 조치
-1. Claude API 상태 페이지 확인
-2. 재시도 타임아웃 값 증가 검토
-3. 지속 시 폴백 로직 활성화
-```
-
-### 6.6 카카오 알림톡 실패 시 AI 분석
-
-```
-🚨 [알림톡 발송 실패] KAKAO_001
-
-━━━━━━━━━━━━━━━━━━━━━
-📍 발송 정보
-• 학원: 피아노포레
-• 수신자: 010-****-1234
-• 템플릿: 레슨 리포트 알림
-
-━━━━━━━━━━━━━━━━━━━━━
-❌ 실패 사유
-• 코드: KAKAO_001
-• 사유: 템플릿 변수 불일치
-• 상세: 변수 'student_name' 누락
-
-━━━━━━━━━━━━━━━━━━━━━
-🤖 AI 분석 (Gemini)
-• 긴급도: 🟡 MEDIUM
-• 원인: 템플릿에 필요한 변수가 전달되지 않음
-• 영향: 해당 학부모에게 알림 미전달
-
-━━━━━━━━━━━━━━━━━━━━━
-💡 권장 조치
-1. 알림톡 발송 로직에서 student_name 변수 확인
-2. 해당 학부모에게 수동 알림 발송 필요
-3. 템플릿 변수 검증 로직 추가 검토
-```
-
-### 6.7 AI 분석 비용 관리
-
-```python
-# Gemini API 호출 조건
-ANALYZE_CONDITIONS = {
-    'critical': True,   # 항상 분석
-    'error': True,      # 항상 분석
-    'warning': False,   # 집계 시에만 분석
-}
-
-# 일일 분석 제한
-DAILY_ANALYSIS_LIMIT = 100  # 일 100건 제한
-```
-
----
-
-## 7. 구현 범위
+## 6. 구현 범위
 
 ### 6.1 프론트엔드 (TutorNote App)
 
@@ -708,17 +355,6 @@ CREATE TABLE error_logs (
   request_id VARCHAR(50) NULL,
   extra JSON NULL,
 
-  -- AI 분석 결과
-  ai_analysis JSON NULL,              -- Gemini 분석 결과 저장
-  ai_urgency ENUM('critical', 'high', 'medium', 'low') NULL,
-  ai_analyzed_at DATETIME NULL,
-
-  -- 해결 정보 (과거 해결 이력 참고용)
-  is_resolved BOOLEAN DEFAULT FALSE,
-  resolution_note TEXT NULL,          -- 해결 방법 기록
-  resolved_at DATETIME NULL,
-  resolved_by VARCHAR(100) NULL,      -- 해결한 사람
-
   -- 알림 상태
   alert_sent BOOLEAN DEFAULT FALSE,
   alert_sent_at DATETIME NULL,
@@ -729,9 +365,7 @@ CREATE TABLE error_logs (
   INDEX idx_error_code (error_code),
   INDEX idx_severity (severity),
   INDEX idx_academy_id (academy_id),
-  INDEX idx_created_at (created_at),
-  INDEX idx_is_resolved (is_resolved),
-  INDEX idx_ai_urgency (ai_urgency)
+  INDEX idx_created_at (created_at)
 );
 ```
 
@@ -837,16 +471,6 @@ TELEGRAM_CHAT_ID: 환경변수
 
 ---
 
-## 변경 이력
-
-| 버전 | 날짜 | 변경 내용 |
-|------|------|----------|
-| 1.0 | 2026-01-23 | 초기 스펙 작성 |
-| 1.1 | 2026-01-23 | 카카오 알림톡 실패 즉시 알림, Gemini AI 분석, 중복 방지 로직 개선 |
-| 1.2 | 2026-01-23 | Gemini 분석 시 에러 로그 포함 (유사 에러, 연관 에러, 해결 이력) |
-
----
-
 **작성일**: 2026-01-23
 **작성자**: Friday (AI Assistant)
-**버전**: 1.2
+**버전**: 1.0
