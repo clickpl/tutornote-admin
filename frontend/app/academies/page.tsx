@@ -37,8 +37,17 @@ interface Academy {
   student_count: number;
   attendance_code_type: string;
   status: string;
+  provider?: string;
   created_at: string;
+  last_login_at?: string;
 }
+
+const providerConfig: Record<string, { label: string; bg: string; text: string; icon: string }> = {
+  kakao: { label: '카카오', bg: 'bg-yellow-400', text: 'text-yellow-900', icon: 'K' },
+  naver: { label: '네이버', bg: 'bg-green-500', text: 'text-white', icon: 'N' },
+  google: { label: '구글', bg: 'bg-blue-500', text: 'text-white', icon: 'G' },
+  local: { label: '이메일', bg: 'bg-slate-200', text: 'text-slate-600', icon: '@' },
+};
 
 const statusLabels: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
   active: { label: '활성', variant: 'default' },
@@ -171,13 +180,14 @@ export default function AcademiesPage() {
                       <TableHead>상태</TableHead>
                       <TableHead>출석방식</TableHead>
                       <TableHead>가입일</TableHead>
+                      <TableHead>최근 로그인</TableHead>
                       <TableHead className="w-[80px]">관리</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {academies.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={7} className="h-32 text-center text-muted-foreground">
+                        <TableCell colSpan={8} className="h-32 text-center text-muted-foreground">
                           등록된 학원이 없습니다
                         </TableCell>
                       </TableRow>
@@ -196,8 +206,23 @@ export default function AcademiesPage() {
                             </div>
                           </TableCell>
                           <TableCell>
-                            <p className="font-medium">{academy.owner_name || '-'}</p>
-                            <p className="text-xs text-muted-foreground">{academy.owner_email}</p>
+                            <div className="flex items-center gap-2">
+                              <div>
+                                <p className="font-medium">{academy.owner_name || '-'}</p>
+                                <p className="text-xs text-muted-foreground">{academy.owner_email}</p>
+                              </div>
+                              {(() => {
+                                const config = providerConfig[academy.provider || 'local'] || providerConfig.local;
+                                return (
+                                  <span
+                                    className={`inline-flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold shrink-0 ${config.bg} ${config.text}`}
+                                    title={`${config.label} 가입`}
+                                  >
+                                    {config.icon}
+                                  </span>
+                                );
+                              })()}
+                            </div>
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-1.5">
@@ -217,6 +242,9 @@ export default function AcademiesPage() {
                           </TableCell>
                           <TableCell className="text-muted-foreground">
                             {formatDate(academy.created_at)}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {academy.last_login_at ? formatDate(academy.last_login_at) : '-'}
                           </TableCell>
                           <TableCell>
                             <Button variant="ghost" size="icon" asChild>

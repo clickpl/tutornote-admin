@@ -5,21 +5,20 @@ import {
   Building2,
   Users,
   FileText,
-  Activity,
-  Image,
+  Send,
   Eye,
   Sparkles,
   TrendingUp,
-  DollarSign,
+  Award,
   CreditCard,
   Cpu,
   Wifi,
+  BarChart3,
 } from 'lucide-react';
 import AdminLayout from '@/components/layout/AdminLayout';
 import CriticalAlerts from '@/components/dashboard/CriticalAlerts';
 import MetricCard from '@/components/dashboard/MetricCard';
 import DashboardTables from '@/components/dashboard/DashboardTables';
-import QuickActions from '@/components/dashboard/QuickActions';
 import { Badge } from '@/components/ui/badge';
 import {
   dashboardMetricsApi,
@@ -62,14 +61,14 @@ export default function DashboardPage() {
   const [onboardingAcademies, setOnboardingAcademies] = useState<OnboardingFunnelAcademy[]>([]);
   const [funnelSummary, setFunnelSummary] = useState<{
     signup: number;
+    owner_name: number;
     student_added: number;
-    report_created: number;
-    shared: number;
+    wizard_completed: number;
   } | null>(null);
   const [conversionRates, setConversionRates] = useState<{
-    signup_to_student: number;
-    student_to_report: number;
-    report_to_share: number;
+    signup_to_name: number;
+    name_to_student: number;
+    student_to_complete: number;
     overall: number;
   } | null>(null);
 
@@ -153,25 +152,6 @@ export default function DashboardPage() {
     }
   };
 
-  const handleContactAtRisk = () => {
-    // 이탈 위험 학원 연락 기능
-    alert(`이탈 위험 학원 ${atRiskAcademies.length}개에 연락을 시도합니다.`);
-  };
-
-  const handleSendPromotion = () => {
-    // 유료 전환 안내 기능
-    alert(`헤비유저 ${monetization?.heavy_users || 0}개 학원에 유료 전환 안내를 발송합니다.`);
-  };
-
-  const handleExportReport = () => {
-    // 주간 리포트 생성
-    alert('주간 리포트를 PDF로 생성합니다.');
-  };
-
-  const handleDownloadData = () => {
-    // 데이터 내보내기
-    alert('대시보드 데이터를 Excel/CSV로 내보냅니다.');
-  };
 
   return (
     <AdminLayout>
@@ -194,6 +174,7 @@ export default function DashboardPage() {
           <MetricCard
             icon={Building2}
             label="활성 학원"
+            tooltip="최근 7일 내 로그인, 출석, 수업일지 중 하나라도 활동이 있는 학원 수"
             value={academyStatus?.active_academies ?? 0}
             subValue={`전체 ${academyStatus?.total_academies ?? 0} / 이탈 ${academyStatus?.churned_this_month ?? 0}`}
             trend="up"
@@ -204,6 +185,7 @@ export default function DashboardPage() {
           <MetricCard
             icon={Users}
             label="총 학생 수"
+            tooltip="삭제되지 않은 전체 등록 학생 수 (현재 기준)"
             value={studentStats?.total_students?.toLocaleString() ?? 0}
             subValue={`학원당 평균 ${studentStats?.avg_per_academy?.toFixed(1) ?? 0}명`}
             trend="up"
@@ -213,33 +195,37 @@ export default function DashboardPage() {
           />
           <MetricCard
             icon={FileText}
-            label="리포트 활동"
-            value={`${reportActivity?.this_month?.toLocaleString() ?? 0}건`}
-            subValue={`오늘 ${reportActivity?.today ?? 0} / 일평균 ${reportActivity?.avg_daily ?? 0}`}
+            label="진도 저장"
+            tooltip="이번 달 수업일지에서 진도를 저장한 횟수"
+            value={`${reportActivity?.saved_month?.toLocaleString() ?? 0}건`}
+            subValue={`오늘 ${reportActivity?.saved_today ?? 0} / 일평균 ${reportActivity?.avg_daily ?? 0}`}
             color="yellow"
             loading={loading}
           />
           <MetricCard
             icon={Sparkles}
-            label="AI 리포트 비율"
-            value={`${aiEfficiency?.ai_rate?.toFixed(1) ?? 0}%`}
-            subValue={`평균 ${aiEfficiency?.avg_generation_time?.toFixed(1) ?? 0}초 생성`}
+            label="AI 수업일지"
+            tooltip="이번 달 AI(Claude)로 수업일지를 자동 생성한 횟수"
+            value={`${aiEfficiency?.ai_generated_month ?? 0}건`}
+            subValue={`오늘 ${aiEfficiency?.ai_generated_today ?? 0} / 평균 ${aiEfficiency?.avg_generation_time?.toFixed(1) ?? 0}초`}
             color="purple"
             loading={loading}
           />
 
-          {/* Row 2: AI 콘텐츠 + 사용자 행동 */}
+          {/* Row 2: 전송 + 사용자 행동 */}
           <MetricCard
-            icon={Image}
-            label="카드뉴스 생성"
-            value={`${contentGeneration?.card_news_month ?? 0}건`}
-            subValue={`오늘 ${contentGeneration?.card_news_today ?? 0} / 생성률 ${contentGeneration?.generation_rate ?? 0}%`}
+            icon={Send}
+            label="수업일지 전송"
+            tooltip="이번 달 학부모에게 수업일지를 전송(카카오/링크)한 횟수"
+            value={`${contentGeneration?.sent_month ?? 0}건`}
+            subValue={`카카오 ${contentGeneration?.kakao_count ?? 0} / 링크 ${contentGeneration?.link_count ?? 0}`}
             color="orange"
             loading={loading}
           />
           <MetricCard
             icon={Eye}
             label="학부모 열람률"
+            tooltip="이번 달 학부모 열람 수 / 공유한 수업일지 수 × 100"
             value={`${parentReach?.view_rate?.toFixed(1) ?? 0}%`}
             subValue={`${parentReach?.total_views ?? 0}회 열람 / ${parentReach?.total_shares ?? 0}회 공유`}
             trend={parentReach && parentReach.view_rate >= 50 ? 'up' : 'down'}
@@ -247,37 +233,41 @@ export default function DashboardPage() {
             loading={loading}
           />
           <MetricCard
-            icon={Activity}
-            label="고착도 (Stickiness)"
-            value={`${engagement?.stickiness?.toFixed(1) ?? 0}%`}
-            subValue={`DAU ${engagement?.dau ?? 0} / MAU ${engagement?.mau ?? 0}`}
-            trend={engagement && engagement.stickiness >= 20 ? 'up' : 'down'}
-            trendLabel={engagement?.stickiness_label}
+            icon={BarChart3}
+            label="종합 성장 지수"
+            tooltip="(활성학원 성장률 + 학생 성장률 + 일지 성장률) / 3. 지난달 대비 이번달 증감률 평균"
+            value={`${engagement?.growth_index?.toFixed(1) ?? 0}%`}
+            subValue={`학원 ${engagement?.academy_growth ?? 0 > 0 ? '+' : ''}${engagement?.academy_growth ?? 0}% / 학생 ${engagement?.student_growth ?? 0 > 0 ? '+' : ''}${engagement?.student_growth ?? 0}% / 일지 ${engagement?.report_growth ?? 0 > 0 ? '+' : ''}${engagement?.report_growth ?? 0}%`}
+            trend={engagement && engagement.growth_index > 0 ? 'up' : engagement && engagement.growth_index < 0 ? 'down' : 'neutral'}
+            trendLabel="지난달 대비"
             color="purple"
             loading={loading}
           />
           <MetricCard
             icon={TrendingUp}
-            label="온보딩 전환율"
-            value={`${onboardingFunnel?.conversion_rate?.toFixed(1) ?? 0}%`}
-            subValue={`가입 ${onboardingFunnel?.signup ?? 0} → 공유 ${onboardingFunnel?.shared ?? 0}`}
+            label="온보딩 완료율"
+            tooltip="이번 달 가입한 학원 중 온보딩 위자드를 완료한 비율"
+            value={`${onboardingFunnel?.completion_rate?.toFixed(1) ?? 0}%`}
+            subValue={`가입 ${onboardingFunnel?.signup_count ?? 0} → 완료 ${onboardingFunnel?.completed_count ?? 0}`}
             color="blue"
             loading={loading}
           />
 
-          {/* Row 3: 수익화 + 시스템 */}
+          {/* Row 3: 운영 + 시스템 */}
           <MetricCard
-            icon={DollarSign}
-            label="헤비유저"
-            value={`${monetization?.heavy_users ?? 0}개`}
-            subValue={`전환율 ${monetization?.heavy_user_rate?.toFixed(1) ?? 0}% / 예상 MRR $${monetization?.estimated_mrr ?? 0}`}
-            trend={monetization && monetization.heavy_user_rate >= 5 ? 'up' : 'neutral'}
+            icon={Award}
+            label="충성 학원"
+            tooltip="이번 달 영업일 기준 로그인 80% 이상 AND 키오스크 80% 이상 학원 수"
+            value={`${monetization?.loyal_count ?? 0}개`}
+            subValue={`로그인 ${monetization?.login_qualified ?? 0} / 키오스크 ${monetization?.kiosk_qualified ?? 0} (영업일 ${monetization?.business_days ?? 0}일)`}
+            trend={monetization && monetization.loyal_count > 0 ? 'up' : 'neutral'}
             color="green"
             loading={loading}
           />
           <MetricCard
             icon={CreditCard}
             label="AI 비용 (Claude)"
+            tooltip="이번 달 Claude API 호출 비용 합계 (USD)"
             value={`$${costBreakdown?.ai_cost_month?.toFixed(4) ?? 0}`}
             subValue={`리포트당 $${costBreakdown?.cost_per_report?.toFixed(4) ?? 0}`}
             color="purple"
@@ -286,6 +276,7 @@ export default function DashboardPage() {
           <MetricCard
             icon={Cpu}
             label="시스템 상태"
+            tooltip="서버 CPU, RAM, Disk 사용률 (실시간)"
             value={`CPU ${systemHealth?.cpu_usage?.toFixed(0) ?? 0}%`}
             subValue={`RAM ${systemHealth?.ram_usage?.toFixed(0) ?? 0}% / Disk ${systemHealth?.disk_usage?.toFixed(0) ?? 0}%`}
             trend={
@@ -303,6 +294,7 @@ export default function DashboardPage() {
           <MetricCard
             icon={Wifi}
             label="API 상태"
+            tooltip="Claude API, Kakao API 응답 성공률 (실시간)"
             value={apiStatus?.claude?.status === 'healthy' ? '정상' : '점검 중'}
             subValue={`Claude ${apiStatus?.claude?.success_rate ?? 0}% / Kakao ${apiStatus?.kakao?.success_rate ?? 0}%`}
             trend={apiStatus?.claude?.status === 'healthy' ? 'up' : 'down'}
@@ -311,32 +303,15 @@ export default function DashboardPage() {
           />
         </div>
 
-        {/* 하단 섹션: 테이블 + 빠른 액션 */}
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
-          {/* 테이블 섹션 - 3/4 너비 */}
-          <div className="lg:col-span-3">
-            <DashboardTables
-              atRiskAcademies={atRiskAcademies}
-              activeAcademies={activeAcademies}
-              onboardingAcademies={onboardingAcademies}
-              funnelSummary={funnelSummary || undefined}
-              conversionRates={conversionRates || undefined}
-              loading={tablesLoading}
-            />
-          </div>
-
-          {/* 빠른 액션 - 1/4 너비 */}
-          <div className="lg:col-span-1">
-            <QuickActions
-              atRiskCount={atRiskAcademies.length}
-              heavyUserCount={monetization?.heavy_users ?? 0}
-              onContactAtRisk={handleContactAtRisk}
-              onSendPromotion={handleSendPromotion}
-              onExportReport={handleExportReport}
-              onDownloadData={handleDownloadData}
-            />
-          </div>
-        </div>
+        {/* 하단 섹션: 테이블 */}
+        <DashboardTables
+          atRiskAcademies={atRiskAcademies}
+          activeAcademies={activeAcademies}
+          onboardingAcademies={onboardingAcademies}
+          funnelSummary={funnelSummary || undefined}
+          conversionRates={conversionRates || undefined}
+          loading={tablesLoading}
+        />
       </div>
     </AdminLayout>
   );
