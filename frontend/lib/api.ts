@@ -109,13 +109,14 @@ export const dashboardApi = {
 
 // Academies
 export const academiesApi = {
-  list: (page = 1, perPage = 20, search = '', status = '') => {
+  list: (page = 1, perPage = 20, search = '', status = '', plan = '') => {
     const params = new URLSearchParams({
       page: String(page),
       per_page: String(perPage),
     });
     if (search) params.append('search', search);
     if (status) params.append('status', status);
+    if (plan) params.append('plan', plan);
 
     return fetchApi<{
       academies: Array<{
@@ -127,6 +128,11 @@ export const academiesApi = {
         student_count: number;
         attendance_code_type: string;
         status: string;
+        plan: 'free' | 'aiplus' | 'payment';
+        payment_enabled: boolean;
+        payment_status?: 'active' | 'inactive' | 'reviewing';
+        is_founding_member: boolean;
+        payment_commission_rate?: number;
         created_at: string;
       }>;
       total: number;
@@ -432,7 +438,7 @@ export const systemApi = {
 // Metrics & Analytics
 export interface MetricsOverview {
   retention: {
-    dau: number;
+    wau: number;
     mau: number;
     stickiness: number;
     stickiness_label: string;
@@ -656,54 +662,54 @@ export interface StudentStatsMetrics {
 }
 
 export interface ReportActivityMetrics {
-  today: number;
-  this_week: number;
-  this_month: number;
+  saved_today: number;
+  saved_month: number;
   avg_daily: number;
 }
 
 export interface EngagementMetrics {
-  dau: number;
-  mau: number;
-  stickiness: number;
-  stickiness_label: string;
+  growth_index: number;
+  academy_growth: number;
+  student_growth: number;
+  report_growth: number;
+  last_month_summary: {
+    active_academies: number;
+    students: number;
+    reports: number;
+  };
 }
 
 export interface ContentGenerationMetrics {
-  card_news_today: number;
-  card_news_month: number;
-  generation_rate: number;
+  sent_month: number;
+  sent_today: number;
+  kakao_count: number;
+  link_count: number;
 }
 
 export interface ParentReachMetrics {
   total_shares: number;
   total_views: number;
   view_rate: number;
-  avg_duration: number;
+  viewed_reports: number;
 }
 
 export interface AIEfficiencyMetrics {
-  total_reports: number;
-  ai_generated: number;
-  ai_rate: number;
+  ai_generated_month: number;
+  ai_generated_today: number;
   avg_generation_time: number;
-  edited_count: number;
-  edit_rate: number;
 }
 
 export interface OnboardingFunnelMetrics {
-  signup: number;
-  student_added: number;
-  report_created: number;
-  shared: number;
-  conversion_rate: number;
+  signup_count: number;
+  completed_count: number;
+  completion_rate: number;
 }
 
 export interface MonetizationMetrics {
-  heavy_users: number;
-  heavy_user_rate: number;
-  estimated_mrr: number;
-  potential_upgrades: number;
+  loyal_count: number;
+  business_days: number;
+  login_qualified: number;
+  kiosk_qualified: number;
 }
 
 export interface CostBreakdownMetrics {
@@ -746,11 +752,11 @@ export interface ActiveAcademy {
   owner_name: string;
   phone: string;
   student_count: number;
-  monthly_reports: number;
+  monthly_progress: number;
   total_shares: number;
   last_activity: string | null;
   signup_date: string;
-  is_heavy_user: boolean;
+  is_loyal: boolean;
   recommended_plan: string;
 }
 
@@ -759,11 +765,9 @@ export interface OnboardingFunnelAcademy {
   academy_name: string;
   owner_name: string;
   signup_date: string;
-  has_students: boolean;
   student_count: number;
-  created_report: boolean;
-  report_count: number;
-  shared_kakaotalk: boolean;
+  wizard_completed: boolean;
+  wizard_completed_at: string | null;
   current_step: number;
   status: string;
 }
@@ -805,6 +809,32 @@ export const dashboardMetricsApi = {
 
   getApiStatus: () =>
     fetchApi<ApiStatusMetrics>('/api/admin/metrics/api-status'),
+
+  getActivationFunnel: () =>
+    fetchApi<{
+      funnel: {
+        wizard_rate: number;
+        first_record_rate: number;
+        first_report_rate: number;
+        revisit_rate: number;
+      };
+      counts: {
+        total: number;
+        wizard_done: number;
+        first_record_done: number;
+        first_report_done: number;
+        revisit_done: number;
+      };
+      academies: Array<{
+        id: number;
+        name: string;
+        wizard_done: boolean;
+        student_count: number;
+        record_count: number;
+        report_count: number;
+        last_active_at: string | null;
+      }>;
+    }>('/api/admin/metrics/activation-funnel'),
 };
 
 export const dashboardTablesApi = {
@@ -825,14 +855,14 @@ export const dashboardTablesApi = {
       total_count: number;
       funnel_summary: {
         signup: number;
+        owner_name: number;
         student_added: number;
-        report_created: number;
-        shared: number;
+        wizard_completed: number;
       };
       conversion_rates: {
-        signup_to_student: number;
-        student_to_report: number;
-        report_to_share: number;
+        signup_to_name: number;
+        name_to_student: number;
+        student_to_complete: number;
         overall: number;
       };
     }>('/api/admin/tables/onboarding-funnel'),
@@ -960,12 +990,14 @@ export interface AICostSummary {
 
 export interface AIInsight {
   id: string;
-  type: 'critical' | 'warning' | 'opportunity';
+  type: 'critical' | 'warning' | 'caution' | 'opportunity';
   title: string;
   description: string;
   academyId: number;
   playbookReady: boolean;
   messageReady: boolean;
+  lastActivity?: string;
+  lastActivityType?: string;
 }
 
 export interface AITodayInsights {
@@ -973,6 +1005,7 @@ export interface AITodayInsights {
   summary: {
     critical: number;
     warning: number;
+    caution: number;
     opportunity: number;
   };
 }
@@ -1048,6 +1081,16 @@ export const aiIntelligenceApi = {
   // 오늘의 인사이트 조회
   getTodayInsights: () =>
     fetchApi<AITodayInsights>('/api/admin/ai/today-insights'),
+
+  // LMS 직접 발송
+  sendLms: (data: { academy_id: number; message: string; message_type: string }) =>
+    fetchApi<{ success: boolean; message_id: string; error: string; recipient: string }>(
+      '/api/admin/ai/send-lms',
+      {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }
+    ),
 };
 
 // =============================================================================
@@ -1397,11 +1440,89 @@ export const notificationsApi = {
   },
 };
 
+// =============================================================================
+// Blog API
+// =============================================================================
+
+export interface BlogPost {
+  id: number;
+  slug: string;
+  title: string;
+  description: string;
+  content: string;
+  author: string;
+  tags: string[];
+  keyword: string;
+  status: 'draft' | 'published' | 'archived';
+  published_at: string | null;
+  source: 'manual' | 'n8n' | 'migration';
+  notion_id: string | null;
+  view_count: number;
+  reading_time: number;
+  og_image_url: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BlogPostInput {
+  title: string;
+  slug?: string;
+  description: string;
+  content: string;
+  author?: string;
+  tags?: string[];
+  keyword?: string;
+  status?: 'draft' | 'published' | 'archived';
+  og_image_url?: string;
+}
+
+export const blogApi = {
+  list: (status?: string, search?: string) => {
+    const params = new URLSearchParams();
+    if (status) params.append('status', status);
+    if (search) params.append('search', search);
+    const qs = params.toString();
+    return fetchApi<{ success: boolean; data: BlogPost[] }>(`/api/admin/blog${qs ? '?' + qs : ''}`);
+  },
+  get: (id: number) =>
+    fetchApi<{ success: boolean; data: BlogPost }>(`/api/admin/blog/${id}`),
+  create: (data: BlogPostInput) =>
+    fetchApi<{ success: boolean; data: { id: number; slug: string } }>('/api/admin/blog', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  update: (id: number, data: Partial<BlogPostInput>) =>
+    fetchApi<{ success: boolean }>(`/api/admin/blog/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+  delete: (id: number) =>
+    fetchApi<{ success: boolean }>(`/api/admin/blog/${id}`, {
+      method: 'DELETE',
+    }),
+  updateStatus: (id: number, status: string) =>
+    fetchApi<{ success: boolean }>(`/api/admin/blog/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    }),
+};
+
 // ============================================================================
 // 결제 관리 API
 // ============================================================================
 
 export interface BillingDashboard {
+  // 3-tier MRR breakdown
+  total_mrr: number;              // 구독 + 수수료 + 알림톡
+  subscription_mrr: number;       // AI Plus 4,900원 × 구독 학원 수
+  commission_mrr: number;         // Payment 월 결제 수수료 합계
+  alimtalk_revenue: number;       // 크레딧 충전 금액 합계
+  // Plan distribution
+  plan_counts: { free: number; basic: number; payment: number };
+  founding_member_count: number;  // N/100
+  // Grants cost
+  alimtalk_grant_cost: number;    // 창립멤버 200건 + Payment 500건 비용
+  // Legacy fields (kept for backward compat)
   mrr: number;
   arr: number;
   total_subscribers: number;
@@ -1497,4 +1618,122 @@ export const billingApi = {
 
   getFailedPayments: () =>
     fetchApi<{ failed_payments: FailedPayment[]; total: number }>('/api/admin/billing/failed-payments'),
+};
+
+// Academy Payment Transactions (학원비 결제)
+export interface PaymentTransaction {
+  id: number;
+  academy_id: number;
+  academy_name: string;
+  student_id: number;
+  student_name: string;
+  amount: number;
+  pg_fee: number;           // PG 수수료 (2.4%)
+  tn_fee: number;           // TN 수수료 (0.4% or 0.2%)
+  settlement_amount: number; // 정산금액 = amount - pg_fee - tn_fee
+  status: 'pending' | 'success' | 'failed' | 'cancelled' | 'refunded';
+  payment_method?: string;
+  paid_at: string | null;
+  created_at: string;
+}
+
+export interface PaymentTransactionSummary {
+  total_amount: number;
+  total_pg_fee: number;
+  total_tn_fee: number;
+  total_settlement: number;
+}
+
+// =============================================================================
+// Phase 2.5: 알림톡 수동 발송 & 고객 지원 요청 API
+// =============================================================================
+
+export interface AlimtalkSendRequest {
+  academy_id: number;
+  template_type: 'd7_reactivation' | 'welcome';
+}
+
+export interface AlimtalkSendResponse {
+  success: boolean;
+  send_id: number;
+  message: string;
+}
+
+export type SupportRequestStatus = 'new' | 'in_progress' | 'resolved' | 'no_action';
+
+export interface SupportRequest {
+  id: number;
+  academy_id: number;
+  academy_name: string;
+  user_name: string;
+  user_phone: string;
+  source: string;
+  difficulties: string[];
+  difficulties_labels: string[];
+  intent: string | null;
+  wants_help: boolean;
+  free_text: string | null;
+  status: SupportRequestStatus;
+  admin_memo: string | null;
+  handled_by: number | null;
+  handled_at: string | null;
+  created_at: string;
+}
+
+export const alimtalkApi = {
+  send: (data: AlimtalkSendRequest) =>
+    fetchApi<AlimtalkSendResponse>('/api/admin/alimtalk/send', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+};
+
+export const supportRequestsApi = {
+  list: (params?: {
+    status?: string;
+    source?: string;
+    academy_id?: number;
+    date_from?: string;
+    date_to?: string;
+    page?: number;
+    limit?: number;
+  }) => {
+    const searchParams = new URLSearchParams();
+    if (params?.status) searchParams.append('status', params.status);
+    if (params?.source) searchParams.append('source', params.source);
+    if (params?.academy_id) searchParams.append('academy_id', String(params.academy_id));
+    if (params?.date_from) searchParams.append('date_from', params.date_from);
+    if (params?.date_to) searchParams.append('date_to', params.date_to);
+    if (params?.page) searchParams.append('page', String(params.page));
+    if (params?.limit) searchParams.append('limit', String(params.limit));
+
+    const qs = searchParams.toString();
+    return fetchApi<{ total: number; items: SupportRequest[] }>(
+      `/api/admin/support-requests${qs ? '?' + qs : ''}`
+    );
+  },
+
+  update: (id: number, data: { status?: SupportRequestStatus; admin_memo?: string }) =>
+    fetchApi<{ success: boolean; message: string }>(
+      `/api/admin/support-requests/${id}`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+      }
+    ),
+};
+
+export const academyPaymentsApi = {
+  list: (page = 1, filters?: { academy_id?: string; status?: string; date_from?: string; date_to?: string }) => {
+    const params = new URLSearchParams({ page: String(page), limit: '20' });
+    if (filters?.academy_id) params.append('academy_id', filters.academy_id);
+    if (filters?.status) params.append('status', filters.status);
+    if (filters?.date_from) params.append('date_from', filters.date_from);
+    if (filters?.date_to) params.append('date_to', filters.date_to);
+    return fetchApi<{
+      transactions: PaymentTransaction[];
+      summary: PaymentTransactionSummary;
+      pagination: { page: number; limit: number; total: number };
+    }>(`/api/admin/academy-payments?${params.toString()}`);
+  },
 };

@@ -23,6 +23,9 @@ import {
   Layers,
   MessageSquare,
   CreditCard,
+  FileText,
+  Landmark,
+  HeartHandshake,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
@@ -62,7 +65,9 @@ const menuItems: MenuItem[] = [
   { href: '/ai-intelligence', label: 'AI 인텔리전스', icon: Brain },
   { href: '/business-metrics', label: '비즈니스 지표', icon: BarChart3 },
   { href: '/billing', label: '결제 관리', icon: CreditCard },
+  { href: '/payments', label: '학원비 결제', icon: Landmark },
   { href: '/academies', label: '학원 관리', icon: Building2 },
+  { href: '/support-requests', label: '고객 지원 요청', icon: HeartHandshake },
   {
     label: '서비스 운영',
     icon: Layers,
@@ -70,6 +75,7 @@ const menuItems: MenuItem[] = [
       { href: '/service-ops/announcements', label: '공지사항 관리', icon: Megaphone },
       { href: '/service-ops/faqs', label: 'FAQ 관리', icon: HelpCircle },
       { href: '/service-ops/banners', label: '팝업/배너 관리', icon: MessageSquare },
+      { href: '/service-ops/blog', label: '블로그 관리', icon: FileText },
     ],
   },
   { href: '/recovery', label: '복구/수정 센터', icon: RotateCcw },

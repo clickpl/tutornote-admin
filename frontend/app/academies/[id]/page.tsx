@@ -18,8 +18,10 @@ import {
   AlertTriangle,
   CheckCircle,
   Ban,
+  MessageSquare,
 } from 'lucide-react';
 import AdminLayout from '@/components/layout/AdminLayout';
+import AlimtalkSendModal from '@/components/admin/AlimtalkSendModal';
 import { academiesApi } from '@/lib/api';
 import { formatKSTDate } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -111,6 +113,9 @@ export default function AcademyDetailPage() {
   const [newStatus, setNewStatus] = useState('');
   const [statusReason, setStatusReason] = useState('');
   const [changingStatus, setChangingStatus] = useState(false);
+
+  // 알림톡 발송 모달
+  const [alimtalkOpen, setAlimtalkOpen] = useState(false);
 
   useEffect(() => {
     if (params.id) {
@@ -257,6 +262,14 @@ export default function AcademyDetailPage() {
                       </>
                     ) : (
                       <>
+                        <Button
+                          variant="outline"
+                          onClick={() => setAlimtalkOpen(true)}
+                          className="gap-1.5 text-primary border-primary/40 hover:bg-primary/5"
+                        >
+                          <MessageSquare className="h-4 w-4" />
+                          알림톡 발송
+                        </Button>
                         <Button variant="outline" onClick={() => setIsEditing(true)}>
                           <Pencil className="h-4 w-4 mr-1" />
                           수정
@@ -487,6 +500,17 @@ export default function AcademyDetailPage() {
           </Card>
         )}
       </div>
+
+      {/* 알림톡 발송 모달 */}
+      {academy && (
+        <AlimtalkSendModal
+          open={alimtalkOpen}
+          onOpenChange={setAlimtalkOpen}
+          academyId={academy.id}
+          ownerName={academy.owner_name || ''}
+          ownerPhone={academy.owner_phone || academy.phone || ''}
+        />
+      )}
     </AdminLayout>
   );
 }
