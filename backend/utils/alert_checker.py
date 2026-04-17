@@ -345,7 +345,8 @@ def check_parent_view_rate_alert() -> Optional[Dict]:
             SELECT
                 COUNT(DISTINCT rv.report_id) as viewed,
                 (SELECT COUNT(*) FROM progress_records
-                 WHERE created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)) as total
+                 WHERE created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+                 AND is_sample = 0) as total
             FROM report_views rv
             WHERE rv.created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
         """)

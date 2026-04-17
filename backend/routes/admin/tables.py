@@ -69,7 +69,7 @@ def get_at_risk_academies():
                 ) as last_activity_type
             FROM academies a
             LEFT JOIN students s ON a.id = s.academy_id AND s.is_deleted = 0
-            LEFT JOIN progress_records pr ON s.id = pr.student_id AND pr.is_deleted = 0
+            LEFT JOIN progress_records pr ON s.id = pr.student_id AND pr.is_deleted = 0 AND pr.is_sample = 0
             LEFT JOIN activity_logs al ON a.id = al.academy_id
             WHERE a.is_deleted = 0
             AND a.created_at < NOW() - INTERVAL 7 DAY
@@ -145,7 +145,7 @@ def get_active_academies():
                 WHERE created_at >= NOW() - INTERVAL 7 DAY
             ) active ON a.id = active.academy_id
             LEFT JOIN students s ON a.id = s.academy_id AND s.is_deleted = 0
-            LEFT JOIN progress_records pr ON s.id = pr.student_id AND pr.is_deleted = 0
+            LEFT JOIN progress_records pr ON s.id = pr.student_id AND pr.is_deleted = 0 AND pr.is_sample = 0
             LEFT JOIN activity_logs al ON a.id = al.academy_id
             WHERE a.is_deleted = 0
             GROUP BY a.id
@@ -219,7 +219,7 @@ def get_onboarding_funnel_table():
                 MIN(CASE WHEN al.action_type = 'share_kakaotalk' THEN al.created_at END) as first_share_date
             FROM academies a
             LEFT JOIN students s ON a.id = s.academy_id AND s.is_deleted = 0
-            LEFT JOIN progress_records pr ON s.id = pr.student_id AND pr.is_deleted = 0
+            LEFT JOIN progress_records pr ON s.id = pr.student_id AND pr.is_deleted = 0 AND pr.is_sample = 0
             LEFT JOIN activity_logs al ON a.id = al.academy_id AND al.action_type = 'share_kakaotalk'
             WHERE a.created_at >= NOW() - INTERVAL 30 DAY
             AND a.is_deleted = 0
@@ -306,6 +306,7 @@ def get_heavy_users():
             JOIN progress_records pr ON s.id = pr.student_id
                 AND pr.created_at >= DATE_FORMAT(NOW(), '%Y-%m-01')
                 AND pr.is_deleted = 0
+                AND pr.is_sample = 0
             LEFT JOIN activity_logs al ON a.id = al.academy_id
             WHERE a.is_deleted = 0
             GROUP BY a.id

@@ -220,6 +220,7 @@ def get_report_activity():
                            AND created_at < DATE_FORMAT(NOW(), '%Y-%m-01') THEN 1 END) as last_month
             FROM progress_records
             WHERE is_deleted = 0
+            AND is_sample = 0
         """)
         monthly = cursor.fetchone()
         this_month = monthly['this_month'] or 0
@@ -235,6 +236,7 @@ def get_report_activity():
             FROM progress_records
             WHERE created_at >= DATE_FORMAT(NOW(), '%Y-%m-01')
             AND is_deleted = 0
+            AND is_sample = 0
         """)
         avg_data = cursor.fetchone()
         report_count = avg_data['report_count'] or 0
@@ -273,13 +275,13 @@ def get_engagement():
     try:
         cursor = conn.cursor(dictionary=True)
 
-        # DAU (Daily Active Users)
+        # WAU (Weekly Active Users) - 최근 7일 활동 학원 수
         cursor.execute("""
-            SELECT COUNT(DISTINCT academy_id) as dau
+            SELECT COUNT(DISTINCT academy_id) as wau
             FROM activity_logs
-            WHERE DATE(created_at) = CURDATE()
+            WHERE created_at >= NOW() - INTERVAL 7 DAY
         """)
-        dau = cursor.fetchone()['dau'] or 0
+        wau = cursor.fetchone()['wau'] or 0
 
         # MAU (Monthly Active Users)
         cursor.execute("""
@@ -289,8 +291,8 @@ def get_engagement():
         """)
         mau = cursor.fetchone()['mau'] or 0
 
-        # 고착도 (Stickiness) = DAU / MAU
-        stickiness = round((dau / mau * 100), 1) if mau > 0 else 0
+        # 고착도 (Stickiness) = WAU / MAU (주간활성 / 월간활성)
+        stickiness = round((wau / mau * 100), 1) if mau > 0 else 0
 
         # 이탈 위험 학원 (7일 이상 무활동)
         cursor.execute("""
@@ -309,7 +311,7 @@ def get_engagement():
         conn.close()
 
         return jsonify({
-            'dau': dau,
+            'wau': wau,
             'mau': mau,
             'stickiness': stickiness,
             'at_risk': at_risk,
@@ -343,6 +345,7 @@ def get_content_generation():
             JOIN students s ON pr.student_id = s.id
             WHERE pr.created_at >= DATE_FORMAT(NOW(), '%Y-%m-01')
             AND pr.is_deleted = 0
+            AND pr.is_sample = 0
         """)
         result = cursor.fetchone()
         card_news_count = result['card_news_count'] or 0
@@ -357,6 +360,7 @@ def get_content_generation():
             AND created_at >= DATE_FORMAT(NOW() - INTERVAL 1 MONTH, '%Y-%m-01')
             AND created_at < DATE_FORMAT(NOW(), '%Y-%m-01')
             AND is_deleted = 0
+            AND is_sample = 0
         """)
         last_month = cursor.fetchone()['last_month'] or 0
         growth_rate = ((card_news_count - last_month) / last_month * 100) if last_month > 0 else 0
@@ -450,6 +454,7 @@ def get_ai_efficiency():
             JOIN students s ON pr.student_id = s.id
             WHERE pr.created_at >= DATE_FORMAT(NOW(), '%Y-%m-01')
             AND pr.is_deleted = 0
+            AND pr.is_sample = 0
         """)
         result = cursor.fetchone()
         ai_reports = result['ai_reports'] or 0
@@ -511,7 +516,7 @@ def get_onboarding_funnel():
                 COUNT(DISTINCT CASE WHEN al.action_type = 'share_kakaotalk' THEN a.id END) as shared_kakaotalk
             FROM academies a
             LEFT JOIN students s ON a.id = s.academy_id AND s.is_deleted = 0
-            LEFT JOIN progress_records pr ON s.id = pr.student_id AND pr.is_deleted = 0
+            LEFT JOIN progress_records pr ON s.id = pr.student_id AND pr.is_deleted = 0 AND pr.is_sample = 0
             LEFT JOIN activity_logs al ON a.id = al.academy_id AND al.action_type = 'share_kakaotalk'
             WHERE a.created_at >= NOW() - INTERVAL 30 DAY
             AND a.is_deleted = 0
@@ -569,6 +574,7 @@ def get_monetization():
                 JOIN students s ON pr.student_id = s.id
                 WHERE pr.created_at >= DATE_FORMAT(NOW(), '%Y-%m-01')
                 AND pr.is_deleted = 0
+                AND pr.is_sample = 0
                 GROUP BY s.academy_id
                 HAVING COUNT(*) >= 20
             ) heavy
