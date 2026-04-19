@@ -30,10 +30,11 @@ def get_db_connection():
     try:
         import mysql.connector
         return mysql.connector.connect(
-            host=os.getenv('DB_HOST', 'localhost'),
-            user=os.getenv('DB_USER', 'root'),
-            password=os.getenv('DB_PASSWORD', ''),
-            database=os.getenv('DB_NAME', 'tutornote')
+            host=os.getenv('DB_HOST', '127.0.0.1'),
+            port=int(os.getenv('DB_PORT', '3306')),
+            user=os.getenv('DB_USER', 'clickpl_user'),
+            password=os.getenv('DB_PASSWORD', '***REMOVED***'),
+            database=os.getenv('DB_NAME', 'tutornote_db')
         )
     except Exception as e:
         print(f"[TelegramNotifier] DB connection failed: {e}")

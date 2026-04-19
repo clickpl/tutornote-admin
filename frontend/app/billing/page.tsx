@@ -48,6 +48,10 @@ import {
   RefreshCw,
   ExternalLink,
   RotateCcw,
+  Star,
+  MessageSquare,
+  Percent,
+  Building2,
 } from 'lucide-react';
 
 function formatKRW(amount: number) {
@@ -164,60 +168,106 @@ export default function BillingManagementPage() {
           <p className="text-muted-foreground">구독, 결제, 매출 현황을 관리합니다.</p>
         </div>
 
-        {/* 매출 대시보드 */}
+        {/* 매출 대시보드 — 3-tier MRR */}
         {dashboard && (
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-                  <DollarSign className="h-4 w-4" /> MRR
-                </div>
-                <p className="text-xl font-bold">₩{formatKRW(dashboard.mrr)}</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-                  <DollarSign className="h-4 w-4" /> 이번달 매출
-                </div>
-                <p className="text-xl font-bold">₩{formatKRW(dashboard.this_month_revenue)}</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-                  <Users className="h-4 w-4" /> 구독자
-                </div>
-                <p className="text-xl font-bold">{dashboard.total_subscribers}</p>
-                <p className="text-xs text-muted-foreground">
-                  월{dashboard.monthly_subscribers} / 연{dashboard.yearly_subscribers}
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-                  <CheckCircle className="h-4 w-4" /> 결제 성공률
-                </div>
-                <p className="text-xl font-bold">{dashboard.payment_success_rate}%</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-                  <TrendingDown className="h-4 w-4" /> 해지율
-                </div>
-                <p className="text-xl font-bold">{dashboard.churn_rate}%</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-                  <AlertTriangle className="h-4 w-4" /> 재시도 대기
-                </div>
-                <p className="text-xl font-bold text-amber-600">{dashboard.pending_retries}</p>
-              </CardContent>
-            </Card>
+          <div className="space-y-4">
+            {/* Row 1: MRR breakdown */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <Card className="border-2 border-primary/20">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                    <DollarSign className="h-4 w-4" /> 총 MRR
+                  </div>
+                  <p className="text-2xl font-bold">₩{formatKRW(dashboard.total_mrr ?? dashboard.mrr)}</p>
+                  <p className="text-xs text-muted-foreground mt-1">구독 + 수수료 + 알림톡</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                    <CreditCard className="h-4 w-4" /> 구독 MRR
+                  </div>
+                  <p className="text-xl font-bold">₩{formatKRW(dashboard.subscription_mrr ?? 0)}</p>
+                  <p className="text-xs text-muted-foreground">AI Plus 4,900원 × {dashboard.total_subscribers}개</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                    <Percent className="h-4 w-4" /> 수수료 MRR
+                  </div>
+                  <p className="text-xl font-bold">₩{formatKRW(dashboard.commission_mrr ?? 0)}</p>
+                  <p className="text-xs text-muted-foreground">Payment 결제 수수료</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                    <MessageSquare className="h-4 w-4" /> 알림톡 매출
+                  </div>
+                  <p className="text-xl font-bold">₩{formatKRW(dashboard.alimtalk_revenue ?? dashboard.credit_revenue)}</p>
+                  <p className="text-xs text-muted-foreground">크레딧 충전 합계</p>
+                </CardContent>
+              </Card>
+            </div>
+            {/* Row 2: Plan distribution & operational metrics */}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                    <Building2 className="h-4 w-4" /> 플랜별 학원
+                  </div>
+                  <div className="flex gap-2 mt-1">
+                    <Badge className="bg-gray-100 text-gray-700">F {dashboard.plan_counts?.free ?? 0}</Badge>
+                    <Badge className="bg-blue-100 text-blue-700">B {dashboard.plan_counts?.basic ?? 0}</Badge>
+                    <Badge className="bg-green-100 text-green-700">P {dashboard.plan_counts?.payment ?? 0}</Badge>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                    <Star className="h-4 w-4 text-yellow-500" /> 창립멤버
+                  </div>
+                  <p className="text-xl font-bold">{dashboard.founding_member_count ?? dashboard.founding_subscribers}/100</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                    <Users className="h-4 w-4" /> 구독자
+                  </div>
+                  <p className="text-xl font-bold">{dashboard.total_subscribers}</p>
+                  <p className="text-xs text-muted-foreground">
+                    월{dashboard.monthly_subscribers} / 연{dashboard.yearly_subscribers}
+                  </p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                    <CheckCircle className="h-4 w-4" /> 결제 성공률
+                  </div>
+                  <p className="text-xl font-bold">{dashboard.payment_success_rate}%</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                    <TrendingDown className="h-4 w-4" /> 해지율
+                  </div>
+                  <p className="text-xl font-bold">{dashboard.churn_rate}%</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                    <AlertTriangle className="h-4 w-4" /> 재시도 대기
+                  </div>
+                  <p className="text-xl font-bold text-amber-600">{dashboard.pending_retries}</p>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         )}
 
@@ -247,11 +297,11 @@ export default function BillingManagementPage() {
                 </SelectContent>
               </Select>
               <Select value={subsFilter.plan_type} onValueChange={(v) => { setSubsFilter(f => ({...f, plan_type: v === 'all' ? '' : v})); setSubsPage(1); }}>
-                <SelectTrigger className="w-32"><SelectValue placeholder="플랜" /></SelectTrigger>
+                <SelectTrigger className="w-40"><SelectValue placeholder="플랜" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">전체</SelectItem>
-                  <SelectItem value="monthly">월간</SelectItem>
-                  <SelectItem value="yearly">연간</SelectItem>
+                  <SelectItem value="aiplus_monthly">AI Plus 월간</SelectItem>
+                  <SelectItem value="aiplus_yearly">AI Plus 연간</SelectItem>
                 </SelectContent>
               </Select>
               <Button variant="outline" size="sm" onClick={() => { loadSubscriptions(); loadDashboard(); }}>
@@ -277,7 +327,8 @@ export default function BillingManagementPage() {
                     <TableRow key={sub.id}>
                       <TableCell className="font-medium">{sub.academy_name}</TableCell>
                       <TableCell>
-                        <Badge variant="outline">{sub.plan_type === 'monthly' ? '월간' : '연간'}</Badge>
+                        <Badge className="bg-blue-100 text-blue-700">AI Plus</Badge>
+                        <Badge variant="outline" className="ml-1">{sub.plan_type === 'monthly' ? '월간 ₩4,900' : '연간 ₩53,900'}</Badge>
                         {sub.is_founding_price && <Badge className="ml-1 bg-purple-100 text-purple-700">창립</Badge>}
                       </TableCell>
                       <TableCell>₩{formatKRW(sub.amount)}</TableCell>

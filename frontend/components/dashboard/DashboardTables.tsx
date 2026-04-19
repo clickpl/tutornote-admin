@@ -26,14 +26,14 @@ interface DashboardTablesProps {
   onboardingAcademies: OnboardingFunnelAcademy[];
   funnelSummary?: {
     signup: number;
+    owner_name: number;
     student_added: number;
-    report_created: number;
-    shared: number;
+    wizard_completed: number;
   };
   conversionRates?: {
-    signup_to_student: number;
-    student_to_report: number;
-    report_to_share: number;
+    signup_to_name: number;
+    name_to_student: number;
+    student_to_complete: number;
     overall: number;
   };
   loading?: boolean;
@@ -87,7 +87,7 @@ export default function DashboardTables({
   };
 
   const getStepBadge = (step: number) => {
-    const steps = ['가입만', '학생 등록', '리포트 생성', '공유 완료'];
+    const steps = ['가입만', '원장명 입력', '학생 등록', '위자드 완료'];
     const colors = ['bg-gray-100', 'bg-blue-100', 'bg-yellow-100', 'bg-green-100'];
     const textColors = ['text-gray-600', 'text-blue-600', 'text-yellow-600', 'text-green-600'];
     return (
@@ -199,24 +199,32 @@ export default function DashboardTables({
             <div className="mb-4 p-3 bg-gray-50 rounded-lg text-sm">
               <div className="font-medium mb-2">판단 기준</div>
               <div className="text-muted-foreground mb-2">
-                최근 7일 내 활동 기록이 있는 학원 (로그인, 학생등록, 리포트, 출석, 수업기록)
+                최근 7일 내 활동 기록이 있는 학원 (로그인, 학생등록, 수업일지, 출석, 수업기록)
               </div>
               <div className="flex flex-wrap gap-3">
                 <span className="flex items-center gap-1">
-                  <Badge variant="secondary" className="bg-purple-100 text-purple-600 text-xs">헤비유저</Badge>
-                  <span className="text-muted-foreground">월 20건 이상 리포트</span>
+                  <Badge variant="secondary" className="bg-purple-100 text-purple-600 text-xs">충성</Badge>
+                  <span className="text-muted-foreground">영업일 80%+ 로그인 AND 키오스크</span>
                 </span>
                 <span className="flex items-center gap-1">
-                  <Badge variant="default" className="text-xs">Pro</Badge>
-                  <span className="text-muted-foreground">월 50건+</span>
+                  <Badge variant="default" className="text-xs">Enterprise</Badge>
+                  <span className="text-muted-foreground">101명+</span>
                 </span>
                 <span className="flex items-center gap-1">
-                  <Badge variant="secondary" className="text-xs">Standard</Badge>
-                  <span className="text-muted-foreground">월 20~49건</span>
+                  <Badge variant="default" className="text-xs">Growth</Badge>
+                  <span className="text-muted-foreground">51~100명</span>
+                </span>
+                <span className="flex items-center gap-1">
+                  <Badge variant="secondary" className="text-xs">Pro</Badge>
+                  <span className="text-muted-foreground">26~50명</span>
+                </span>
+                <span className="flex items-center gap-1">
+                  <Badge variant="secondary" className="text-xs">Lite</Badge>
+                  <span className="text-muted-foreground">11~25명</span>
                 </span>
                 <span className="flex items-center gap-1">
                   <Badge variant="outline" className="text-xs">Free</Badge>
-                  <span className="text-muted-foreground">월 20건 미만</span>
+                  <span className="text-muted-foreground">~10명</span>
                 </span>
               </div>
             </div>
@@ -231,7 +239,7 @@ export default function DashboardTables({
                     <TableHead>학원명</TableHead>
                     <TableHead>대표자</TableHead>
                     <TableHead>학생수</TableHead>
-                    <TableHead>월간 리포트</TableHead>
+                    <TableHead>월간 일지</TableHead>
                     <TableHead>공유 수</TableHead>
                     <TableHead>추천 플랜</TableHead>
                   </TableRow>
@@ -241,24 +249,24 @@ export default function DashboardTables({
                     <TableRow key={academy.id}>
                       <TableCell className="font-medium">
                         {academy.academy_name}
-                        {academy.is_heavy_user && (
+                        {academy.is_loyal && (
                           <Badge variant="secondary" className="ml-2 bg-purple-100 text-purple-600">
-                            헤비유저
+                            충성
                           </Badge>
                         )}
                       </TableCell>
                       <TableCell>{academy.owner_name}</TableCell>
                       <TableCell>{academy.student_count}명</TableCell>
                       <TableCell className="text-green-600 font-medium">
-                        {academy.monthly_reports}건
+                        {academy.monthly_progress}건
                       </TableCell>
                       <TableCell>{academy.total_shares}회</TableCell>
                       <TableCell>
                         <Badge
                           variant={
-                            academy.recommended_plan === 'Pro'
+                            ['Enterprise', 'Growth', 'Pro'].includes(academy.recommended_plan)
                               ? 'default'
-                              : academy.recommended_plan === 'Standard'
+                              : academy.recommended_plan === 'Lite'
                               ? 'secondary'
                               : 'outline'
                           }
@@ -279,7 +287,7 @@ export default function DashboardTables({
             <div className="mb-4 p-3 bg-gray-50 rounded-lg text-sm">
               <div className="font-medium mb-2">판단 기준</div>
               <div className="text-muted-foreground">
-                최근 30일 내 신규 가입 학원의 온보딩 진행 현황
+                이번 달 신규 가입 학원의 온보딩 위자드 진행 현황
               </div>
             </div>
             {/* 퍼널 요약 */}
@@ -290,26 +298,26 @@ export default function DashboardTables({
                   <div className="text-sm text-muted-foreground">가입</div>
                 </div>
                 <div className="text-center p-3 bg-blue-50 rounded-lg">
-                  <div className="text-2xl font-bold text-blue-600">{funnelSummary.student_added}</div>
-                  <div className="text-sm text-muted-foreground">학생 등록</div>
-                  <div className="text-xs text-blue-500">{conversionRates.signup_to_student}%</div>
+                  <div className="text-2xl font-bold text-blue-600">{funnelSummary.owner_name}</div>
+                  <div className="text-sm text-muted-foreground">원장명 입력</div>
+                  <div className="text-xs text-blue-500">{conversionRates.signup_to_name}%</div>
                 </div>
                 <div className="text-center p-3 bg-yellow-50 rounded-lg">
-                  <div className="text-2xl font-bold text-yellow-600">{funnelSummary.report_created}</div>
-                  <div className="text-sm text-muted-foreground">리포트 생성</div>
-                  <div className="text-xs text-yellow-500">{conversionRates.student_to_report}%</div>
+                  <div className="text-2xl font-bold text-yellow-600">{funnelSummary.student_added}</div>
+                  <div className="text-sm text-muted-foreground">학생 등록</div>
+                  <div className="text-xs text-yellow-500">{conversionRates.name_to_student}%</div>
                 </div>
                 <div className="text-center p-3 bg-green-50 rounded-lg">
-                  <div className="text-2xl font-bold text-green-600">{funnelSummary.shared}</div>
-                  <div className="text-sm text-muted-foreground">공유 완료</div>
-                  <div className="text-xs text-green-500">{conversionRates.report_to_share}%</div>
+                  <div className="text-2xl font-bold text-green-600">{funnelSummary.wizard_completed}</div>
+                  <div className="text-sm text-muted-foreground">위자드 완료</div>
+                  <div className="text-xs text-green-500">{conversionRates.student_to_complete}%</div>
                 </div>
               </div>
             )}
 
             {onboardingAcademies.length === 0 ? (
               <div className="py-8 text-center text-muted-foreground">
-                최근 30일 내 신규 학원이 없습니다
+                이번 달 신규 학원이 없습니다
               </div>
             ) : (
               <Table>
@@ -319,7 +327,6 @@ export default function DashboardTables({
                     <TableHead>대표자</TableHead>
                     <TableHead>가입일</TableHead>
                     <TableHead>학생수</TableHead>
-                    <TableHead>리포트</TableHead>
                     <TableHead>현재 단계</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -327,12 +334,11 @@ export default function DashboardTables({
                   {onboardingAcademies.slice(0, 10).map((academy) => (
                     <TableRow key={academy.id}>
                       <TableCell className="font-medium">{academy.academy_name}</TableCell>
-                      <TableCell>{academy.owner_name}</TableCell>
+                      <TableCell>{academy.owner_name || '-'}</TableCell>
                       <TableCell>
                         {new Date(academy.signup_date).toLocaleDateString('ko-KR')}
                       </TableCell>
                       <TableCell>{academy.student_count}명</TableCell>
-                      <TableCell>{academy.report_count}건</TableCell>
                       <TableCell>{getStepBadge(academy.current_step)}</TableCell>
                     </TableRow>
                   ))}

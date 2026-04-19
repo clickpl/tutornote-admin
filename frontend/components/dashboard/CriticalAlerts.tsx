@@ -17,7 +17,7 @@ import { formatKSTDate } from '@/lib/utils';
 
 interface Alert {
   id: string;
-  severity: 'critical' | 'warning';
+  severity: 'critical' | 'warning' | 'caution';
   type: string;
   title: string;
   description: string;
@@ -157,6 +157,7 @@ export default function CriticalAlerts() {
   // Has alerts
   const criticalCount = data.alerts.filter((a) => a.severity === 'critical').length;
   const warningCount = data.alerts.filter((a) => a.severity === 'warning').length;
+  const cautionCount = data.alerts.filter((a) => a.severity === 'caution').length;
 
   return (
     <div className="mb-6 space-y-3">
@@ -179,6 +180,11 @@ export default function CriticalAlerts() {
             {warningCount > 0 && (
               <span className="rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300">
                 {warningCount} warning
+              </span>
+            )}
+            {cautionCount > 0 && (
+              <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900 dark:text-amber-300">
+                {cautionCount} caution
               </span>
             )}
           </span>
@@ -216,32 +222,39 @@ export default function CriticalAlerts() {
 }
 
 function AlertCard({ alert, onAction }: { alert: Alert; onAction: (alert: Alert) => void }) {
-  const isCritical = alert.severity === 'critical';
+  const severityStyles = {
+    critical: {
+      border: 'border-red-500 bg-red-50 dark:bg-red-950',
+      icon: <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400" />,
+      title: 'text-red-800 dark:text-red-200',
+      button: 'destructive' as const,
+      buttonClass: '',
+    },
+    warning: {
+      border: 'border-yellow-500 bg-yellow-50 dark:bg-yellow-950',
+      icon: <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />,
+      title: 'text-yellow-800 dark:text-yellow-200',
+      button: 'default' as const,
+      buttonClass: 'bg-yellow-600 hover:bg-yellow-700 dark:bg-yellow-700 dark:hover:bg-yellow-800',
+    },
+    caution: {
+      border: 'border-amber-500 bg-amber-50 dark:bg-amber-950',
+      icon: <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400" />,
+      title: 'text-amber-800 dark:text-amber-200',
+      button: 'outline' as const,
+      buttonClass: 'border-amber-500 text-amber-700 hover:bg-amber-100 dark:text-amber-300',
+    },
+  };
+
+  const style = severityStyles[alert.severity] || severityStyles.caution;
 
   return (
-    <div
-      className={`
-        rounded-lg border-l-4 p-4
-        ${isCritical
-          ? 'border-red-500 bg-red-50 dark:bg-red-950'
-          : 'border-yellow-500 bg-yellow-50 dark:bg-yellow-950'}
-      `}
-    >
+    <div className={`rounded-lg border-l-4 p-4 ${style.border}`}>
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <div className="mb-1 flex items-center gap-2">
-            {isCritical ? (
-              <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
-            ) : (
-              <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
-            )}
-            <h3
-              className={`font-bold ${
-                isCritical
-                  ? 'text-red-800 dark:text-red-200'
-                  : 'text-yellow-800 dark:text-yellow-200'
-              }`}
-            >
+            {style.icon}
+            <h3 className={`font-bold ${style.title}`}>
               {alert.title}
             </h3>
           </div>
@@ -259,12 +272,9 @@ function AlertCard({ alert, onAction }: { alert: Alert; onAction: (alert: Alert)
         </div>
 
         <Button
-          variant={isCritical ? 'destructive' : 'default'}
+          variant={style.button}
           size="sm"
-          className={`ml-4 ${
-            !isCritical &&
-            'bg-yellow-600 hover:bg-yellow-700 dark:bg-yellow-700 dark:hover:bg-yellow-800'
-          }`}
+          className={`ml-4 ${style.buttonClass}`}
           onClick={() => onAction(alert)}
         >
           조치하기

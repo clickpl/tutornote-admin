@@ -1,6 +1,8 @@
 'use client';
 
 import { Card, CardContent } from '@/components/ui/card';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Info } from 'lucide-react';
 import CircularGauge from './CircularGauge';
 
 interface PMFMetricCardProps {
@@ -13,6 +15,7 @@ interface PMFMetricCardProps {
   disabled?: boolean;
   disabledText?: string;
   size?: 'large' | 'small';
+  tooltip?: string;
 }
 
 const statusBadge = {
@@ -32,6 +35,7 @@ export default function PMFMetricCard({
   disabled = false,
   disabledText = '준비 중',
   size = 'large',
+  tooltip,
 }: PMFMetricCardProps) {
   const badge = statusBadge[status];
   const isSmall = size === 'small';
@@ -73,7 +77,21 @@ export default function PMFMetricCard({
             </div>
           </>
         )}
-        <p className={`${isSmall ? 'mt-2 text-xs' : 'mt-3 text-sm'} font-medium`}>{title}</p>
+        <div className={`flex items-center gap-1 ${isSmall ? 'mt-2' : 'mt-3'}`}>
+          <p className={`${isSmall ? 'text-xs' : 'text-sm'} font-medium`}>{title}</p>
+          {tooltip && (
+            <TooltipProvider delayDuration={200}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Info className={`${isSmall ? 'h-3 w-3' : 'h-3.5 w-3.5'} cursor-help text-muted-foreground`} />
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="max-w-xs text-xs">
+                  <p className="whitespace-pre-line">{tooltip}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+        </div>
       </CardContent>
     </Card>
   );

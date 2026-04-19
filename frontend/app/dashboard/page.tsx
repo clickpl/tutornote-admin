@@ -72,12 +72,40 @@ export default function DashboardPage() {
     overall: number;
   } | null>(null);
 
+  // 활성화 퍼널 상태
+  const [activationFunnel, setActivationFunnel] = useState<{
+    funnel: {
+      wizard_rate: number;
+      first_record_rate: number;
+      first_report_rate: number;
+      revisit_rate: number;
+    };
+    counts: {
+      total: number;
+      wizard_done: number;
+      first_record_done: number;
+      first_report_done: number;
+      revisit_done: number;
+    };
+    academies: Array<{
+      id: number;
+      name: string;
+      wizard_done: boolean;
+      student_count: number;
+      record_count: number;
+      report_count: number;
+      last_active_at: string | null;
+    }>;
+  } | null>(null);
+  const [funnelLoading, setFunnelLoading] = useState(true);
+
   const [loading, setLoading] = useState(true);
   const [tablesLoading, setTablesLoading] = useState(true);
 
   useEffect(() => {
     fetchMetrics();
     fetchTables();
+    fetchActivationFunnel();
   }, []);
 
   const fetchMetrics = async () => {
@@ -127,6 +155,17 @@ export default function DashboardPage() {
       console.error('Failed to fetch metrics:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchActivationFunnel = async () => {
+    try {
+      const res = await dashboardMetricsApi.getActivationFunnel();
+      if (res.data) setActivationFunnel(res.data);
+    } catch (error) {
+      console.error('Failed to fetch activation funnel:', error);
+    } finally {
+      setFunnelLoading(false);
     }
   };
 
@@ -301,6 +340,143 @@ export default function DashboardPage() {
             color={apiStatus?.claude?.status === 'healthy' ? 'green' : 'yellow'}
             loading={loading}
           />
+        </div>
+
+        {/* 활성화 퍼널 섹션 */}
+        <div className="rounded-xl border bg-white p-6 shadow-sm">
+          <div className="mb-5 flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-semibold">활성화 퍼널</h2>
+              <p className="mt-0.5 text-sm text-gray-500">
+                가입 후 핵심 행동 단계별 전환율 (전체 학원 기준)
+              </p>
+            </div>
+            {!funnelLoading && activationFunnel && (
+              <span className="text-sm text-gray-400">
+                전체 {activationFunnel.counts.total}개 학원
+              </span>
+            )}
+          </div>
+
+          {funnelLoading ? (
+            <div className="space-y-3">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="h-10 animate-pulse rounded-lg bg-gray-100" />
+              ))}
+            </div>
+          ) : activationFunnel ? (
+            <>
+              {/* 가로 막대 차트 */}
+              <div className="space-y-3">
+                {[
+                  {
+                    label: '가입',
+                    rate: 100,
+                    count: activationFunnel.counts.total,
+                    color: 'bg-blue-500',
+                    textColor: 'text-blue-700',
+                    bgLight: 'bg-blue-50',
+                  },
+                  {
+                    label: '온보딩 위자드',
+                    rate: activationFunnel.funnel.wizard_rate,
+                    count: activationFunnel.counts.wizard_done,
+                    color: 'bg-indigo-500',
+                    textColor: 'text-indigo-700',
+                    bgLight: 'bg-indigo-50',
+                  },
+                  {
+                    label: '첫 수업 기록',
+                    rate: activationFunnel.funnel.first_record_rate,
+                    count: activationFunnel.counts.first_record_done,
+                    color: 'bg-violet-500',
+                    textColor: 'text-violet-700',
+                    bgLight: 'bg-violet-50',
+                  },
+                  {
+                    label: '첫 리포트 전송',
+                    rate: activationFunnel.funnel.first_report_rate,
+                    count: activationFunnel.counts.first_report_done,
+                    color: 'bg-purple-500',
+                    textColor: 'text-purple-700',
+                    bgLight: 'bg-purple-50',
+                  },
+                  {
+                    label: 'D+7 재방문',
+                    rate: activationFunnel.funnel.revisit_rate,
+                    count: activationFunnel.counts.revisit_done,
+                    color: 'bg-pink-500',
+                    textColor: 'text-pink-700',
+                    bgLight: 'bg-pink-50',
+                  },
+                ].map((step, idx) => (
+                  <div key={idx} className="flex items-center gap-3">
+                    <span className="w-28 shrink-0 text-sm text-gray-600">{step.label}</span>
+                    <div className={`relative flex h-8 flex-1 overflow-hidden rounded-md ${step.bgLight}`}>
+                      <div
+                        className={`flex h-full items-center justify-end pr-2 transition-all duration-700 ${step.color}`}
+                        style={{ width: `${Math.max(step.rate, 1)}%` }}
+                      />
+                    </div>
+                    <div className="flex w-28 shrink-0 items-center justify-end gap-1">
+                      <span className={`text-sm font-semibold ${step.textColor}`}>
+                        {step.rate.toFixed(1)}%
+                      </span>
+                      <span className="text-xs text-gray-400">({step.count}개)</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* 학원별 상세 테이블 */}
+              {activationFunnel.academies.length > 0 && (
+                <div className="mt-6">
+                  <h3 className="mb-3 text-sm font-medium text-gray-700">학원별 상세 (최근 20개)</h3>
+                  <div className="overflow-x-auto rounded-lg border">
+                    <table className="min-w-full divide-y divide-gray-100 text-sm">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-4 py-2.5 text-left font-medium text-gray-500">학원명</th>
+                          <th className="px-4 py-2.5 text-center font-medium text-gray-500">위자드</th>
+                          <th className="px-4 py-2.5 text-right font-medium text-gray-500">학생수</th>
+                          <th className="px-4 py-2.5 text-right font-medium text-gray-500">기록수</th>
+                          <th className="px-4 py-2.5 text-right font-medium text-gray-500">리포트수</th>
+                          <th className="px-4 py-2.5 text-right font-medium text-gray-500">최근 접속</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-50 bg-white">
+                        {activationFunnel.academies.slice(0, 20).map((academy) => (
+                          <tr key={academy.id} className="hover:bg-gray-50">
+                            <td className="px-4 py-2.5 font-medium text-gray-900">{academy.name}</td>
+                            <td className="px-4 py-2.5 text-center">
+                              {academy.wizard_done ? (
+                                <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">완료</span>
+                              ) : (
+                                <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500">미완</span>
+                              )}
+                            </td>
+                            <td className="px-4 py-2.5 text-right tabular-nums text-gray-700">{academy.student_count}</td>
+                            <td className="px-4 py-2.5 text-right tabular-nums text-gray-700">{academy.record_count}</td>
+                            <td className="px-4 py-2.5 text-right tabular-nums text-gray-700">{academy.report_count}</td>
+                            <td className="px-4 py-2.5 text-right text-gray-500">
+                              {academy.last_active_at
+                                ? new Date(academy.last_active_at).toLocaleDateString('ko-KR', {
+                                    month: '2-digit',
+                                    day: '2-digit',
+                                  })
+                                : '-'}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            <p className="py-8 text-center text-sm text-gray-400">데이터를 불러올 수 없습니다.</p>
+          )}
         </div>
 
         {/* 하단 섹션: 테이블 */}

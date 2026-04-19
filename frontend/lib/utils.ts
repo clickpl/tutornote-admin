@@ -6,17 +6,18 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
- * UTC ISO 문자열을 KST로 변환하여 표시
- * 백엔드에서 UTC 시간으로 저장되고 timezone 정보 없이 반환되므로
- * 'Z'를 붙여 UTC로 파싱한 후 KST로 표시
+ * KST ISO 문자열을 한국어 날짜로 표시
+ * 백엔드 DB가 KST(+09:00)로 저장하므로 timezone 정보를 명시하여 이중 변환 방지
  */
 export function formatKSTDate(isoString: string | null | undefined, options?: Intl.DateTimeFormatOptions): string {
   if (!isoString) return '-';
 
   try {
-    // ISO 문자열에 'Z'가 없으면 UTC로 간주하여 추가
-    const utcString = isoString.endsWith('Z') ? isoString : isoString + 'Z';
-    const date = new Date(utcString);
+    // DB가 KST로 저장하므로 timezone 없는 문자열에 +09:00 명시
+    const kstString = isoString.endsWith('Z') || isoString.includes('+')
+      ? isoString
+      : isoString + '+09:00';
+    const date = new Date(kstString);
 
     if (isNaN(date.getTime())) return isoString;
 

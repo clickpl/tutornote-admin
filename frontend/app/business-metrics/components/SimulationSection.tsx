@@ -31,6 +31,7 @@ interface SimulationData {
 }
 
 interface SimulationSectionProps {
+  refreshKey?: number;
   onOpenSettings?: () => void;
 }
 
@@ -41,16 +42,17 @@ function formatCurrency(amount: number): string {
   return `${amount.toLocaleString()}원`;
 }
 
-export default function SimulationSection({ onOpenSettings }: SimulationSectionProps) {
+export default function SimulationSection({ refreshKey = 0, onOpenSettings }: SimulationSectionProps) {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<SimulationData | null>(null);
 
   useEffect(() => {
     loadSimulation();
-  }, []);
+  }, [refreshKey]);
 
   const loadSimulation = async () => {
     try {
+      if (!data) setLoading(true);
       const token = localStorage.getItem('admin_token');
       const res = await fetch(`${API_URL}/api/admin/business-metrics/simulation`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -115,7 +117,7 @@ export default function SimulationSection({ onOpenSettings }: SimulationSectionP
                 <span className="font-medium">{current.totalAcademies}개</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-sm">Pro 학원</span>
+                <span className="text-sm">유료 학원</span>
                 <span className="font-medium">{current.proAcademies}개</span>
               </div>
               <div className="flex justify-between">
@@ -146,7 +148,7 @@ export default function SimulationSection({ onOpenSettings }: SimulationSectionP
                 <span className="font-medium">{target.totalAcademies}개</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-sm">Pro 학원</span>
+                <span className="text-sm">유료 학원</span>
                 <span className="font-medium">{target.proAcademies}개</span>
               </div>
               <div className="flex justify-between">
@@ -199,7 +201,7 @@ export default function SimulationSection({ onOpenSettings }: SimulationSectionP
             <span className="text-muted-foreground">또는</span>
             <div>
               <span className="text-2xl font-bold text-yellow-600">{breakeven.proAcademies}</span>
-              <span className="ml-1 text-sm text-muted-foreground">개 Pro 학원</span>
+              <span className="ml-1 text-sm text-muted-foreground">개 유료 학원</span>
             </div>
           </div>
           <p className="mt-2 text-xs text-muted-foreground">

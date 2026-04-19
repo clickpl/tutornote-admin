@@ -75,6 +75,7 @@ export default function AIIntelligencePage() {
   const [playbook, setPlaybook] = useState('');
   const [generatedMessage, setGeneratedMessage] = useState('');
   const [selectedAcademy, setSelectedAcademy] = useState<number | null>(null);
+  const [selectedMessageType, setSelectedMessageType] = useState<string>('check_in');
 
   // 다이얼로그 상태
   const [showIntelligence, setShowIntelligence] = useState(false);
@@ -165,6 +166,7 @@ export default function AIIntelligencePage() {
   const handleGenerateMessage = async (academyId: number, messageType: string) => {
     setGenerating(true);
     setSelectedAcademy(academyId);
+    setSelectedMessageType(messageType);
     try {
       const res = await aiIntelligenceApi.generateMessage({
         academy_id: academyId,
@@ -203,6 +205,33 @@ export default function AIIntelligencePage() {
     } catch (error) {
       console.error('Failed to send approval:', error);
       alert('승인 요청 발송 중 오류가 발생했습니다.');
+    }
+  };
+
+  const [sendingLms, setSendingLms] = useState(false);
+
+  const handleSendLms = async (messageType: string) => {
+    if (!selectedAcademy || !generatedMessage) return;
+
+    setSendingLms(true);
+    try {
+      const res = await aiIntelligenceApi.sendLms({
+        academy_id: selectedAcademy,
+        message: generatedMessage,
+        message_type: messageType,
+      });
+      if (res.data?.success) {
+        alert(`${res.data.recipient}님에게 LMS가 발송되었습니다.`);
+        setShowMessage(false);
+        fetchLogs();
+      } else {
+        alert(`발송 실패: ${res.data?.error || res.error || '알 수 없는 오류'}`);
+      }
+    } catch (error) {
+      console.error('Failed to send LMS:', error);
+      alert('LMS 발송 중 오류가 발생했습니다.');
+    } finally {
+      setSendingLms(false);
     }
   };
 
@@ -251,10 +280,12 @@ export default function AIIntelligencePage() {
     return defaults[log.type] || '-';
   };
 
-  const getSituationType = (daysInactive: number) => {
-    if (daysInactive >= 30) return 'inactivity_30d';
-    if (daysInactive >= 21) return 'inactivity_21d';
-    if (daysInactive >= 14) return 'inactivity_14d';
+  const getSituationType = (alert: AIInsight) => {
+    const match = alert.title.match(/(\d+)일/);
+    const days = match ? parseInt(match[1], 10) : 14;
+    if (days >= 30) return 'inactivity_30d';
+    if (days >= 21) return 'inactivity_21d';
+    if (days >= 14) return 'inactivity_14d';
     return 'inactivity_7d';
   };
 
@@ -268,7 +299,7 @@ export default function AIIntelligencePage() {
             <div>
               <h1 className="text-2xl font-bold">AI 인텔리전스</h1>
               <p className="text-sm text-muted-foreground">
-                Gemini 2.0 Flash 기반 자동 분석 및 대응 시스템
+                Gemini 2.5 Flash 기반 자동 분석 및 대응 시스템
               </p>
             </div>
           </div>
@@ -287,8 +318,8 @@ export default function AIIntelligencePage() {
         </div>
 
         {/* 상단 카드 그리드 */}
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-          {/* Critical Alerts */}
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+          {/* Critical Alerts - 21일+ */}
           <Card className="border-red-200 dark:border-red-900">
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2 text-sm font-medium">
@@ -305,14 +336,14 @@ export default function AIIntelligencePage() {
                     {insights?.summary.critical || 0}건
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    14일 이상 무활동 학원
+                    21일 이상 무활동 학원
                   </p>
                 </>
               )}
             </CardContent>
           </Card>
 
-          {/* Warning */}
+          {/* Warning - 14~20일 */}
           <Card className="border-yellow-200 dark:border-yellow-900">
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2 text-sm font-medium">
@@ -329,6 +360,30 @@ export default function AIIntelligencePage() {
                     {insights?.summary.warning || 0}건
                   </p>
                   <p className="text-xs text-muted-foreground">
+                    14일 이상 무활동 학원
+                  </p>
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Caution - 7~13일 */}
+          <Card className="border-amber-200 dark:border-amber-900">
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-2 text-sm font-medium">
+                <AlertTriangle className="h-4 w-4 text-amber-500" />
+                관심 필요
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <Skeleton className="h-8 w-16" />
+              ) : (
+                <>
+                  <p className="text-2xl font-bold text-amber-600">
+                    {insights?.summary.caution || 0}건
+                  </p>
+                  <p className="text-xs text-muted-foreground">
                     7일 이상 무활동 학원
                   </p>
                 </>
@@ -336,12 +391,12 @@ export default function AIIntelligencePage() {
             </CardContent>
           </Card>
 
-          {/* Opportunities */}
+          {/* 충성 학원 */}
           <Card className="border-green-200 dark:border-green-900">
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2 text-sm font-medium">
                 <TrendingUp className="h-4 w-4 text-green-500" />
-                기회 신호
+                충성 학원
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -353,7 +408,7 @@ export default function AIIntelligencePage() {
                     {insights?.summary.opportunity || 0}건
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    헤비유저 학원 (월 20건 이상)
+                    영업일 80%+ 활동+키오스크
                   </p>
                 </>
               )}
@@ -418,7 +473,7 @@ export default function AIIntelligencePage() {
             </TabsTrigger>
             <TabsTrigger value="opportunities" className="gap-2">
               <TrendingUp className="h-4 w-4" />
-              기회 활용
+              충성 학원
             </TabsTrigger>
             <TabsTrigger value="logs" className="gap-2">
               <FileText className="h-4 w-4" />
@@ -445,7 +500,7 @@ export default function AIIntelligencePage() {
                       <Skeleton key={i} className="h-16 w-full" />
                     ))}
                   </div>
-                ) : insights?.insights.filter(i => i.type === 'critical' || i.type === 'warning').length === 0 ? (
+                ) : insights?.insights.filter(i => i.type === 'critical' || i.type === 'warning' || i.type === 'caution').length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-8 text-center">
                     <CheckCircle className="mb-2 h-12 w-12 text-green-500" />
                     <p className="text-lg font-medium">모든 학원이 활성 상태입니다</p>
@@ -460,23 +515,39 @@ export default function AIIntelligencePage() {
                         <TableHead>상태</TableHead>
                         <TableHead>학원 정보</TableHead>
                         <TableHead>설명</TableHead>
+                        <TableHead>마지막 활동</TableHead>
                         <TableHead className="text-right">액션</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {insights?.insights
-                        .filter(i => i.type === 'critical' || i.type === 'warning')
+                        .filter(i => i.type === 'critical' || i.type === 'warning' || i.type === 'caution')
                         .map((alert) => (
                         <TableRow key={alert.id}>
                           <TableCell>
                             <Badge
-                              variant={alert.type === 'critical' ? 'destructive' : 'secondary'}
+                              variant={alert.type === 'critical' ? 'destructive' : alert.type === 'warning' ? 'secondary' : 'outline'}
                             >
-                              {alert.type === 'critical' ? '긴급' : '주의'}
+                              {alert.type === 'critical' ? '긴급' : alert.type === 'warning' ? '주의' : '관심'}
                             </Badge>
                           </TableCell>
                           <TableCell className="font-medium">{alert.title}</TableCell>
                           <TableCell className="text-muted-foreground">{alert.description}</TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {alert.lastActivity ? (
+                              <div>
+                                <div>{formatKSTDate(alert.lastActivity)}</div>
+                                <div className="text-xs text-muted-foreground/70">
+                                  {alert.lastActivityType === 'login' ? '로그인' :
+                                   alert.lastActivityType === 'report' ? '수업일지' :
+                                   alert.lastActivityType === 'attendance' ? '출석' :
+                                   alert.lastActivityType === 'student' ? '학생등록' :
+                                   alert.lastActivityType === 'progress' ? '수업기록' :
+                                   alert.lastActivityType === 'signup' ? '가입' : ''}
+                                </div>
+                              </div>
+                            ) : '-'}
+                          </TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-2">
                               {alert.playbookReady && (
@@ -486,7 +557,7 @@ export default function AIIntelligencePage() {
                                   onClick={() =>
                                     handleGeneratePlaybook(
                                       alert.academyId,
-                                      'inactivity_14d'
+                                      getSituationType(alert)
                                     )
                                   }
                                   disabled={generating}
@@ -518,16 +589,16 @@ export default function AIIntelligencePage() {
             </Card>
           </TabsContent>
 
-          {/* 기회 활용 탭 */}
+          {/* 충성 학원 탭 */}
           <TabsContent value="opportunities" className="space-y-4">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <TrendingUp className="h-5 w-5 text-green-500" />
-                  헤비유저 기회
+                  충성 학원
                 </CardTitle>
                 <CardDescription>
-                  활발하게 서비스를 사용하는 학원에 감사 메시지 또는 업그레이드 제안
+                  영업일 80% 이상 활동 + 키오스크 사용 학원에 감사 메시지 또는 업그레이드 제안
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -540,9 +611,9 @@ export default function AIIntelligencePage() {
                 ) : insights?.insights.filter(i => i.type === 'opportunity').length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-8 text-center">
                     <XCircle className="mb-2 h-12 w-12 text-gray-400" />
-                    <p className="text-lg font-medium">헤비유저가 없습니다</p>
+                    <p className="text-lg font-medium">충성 학원이 없습니다</p>
                     <p className="text-sm text-muted-foreground">
-                      월 20건 이상 리포트를 생성한 학원이 없습니다
+                      영업일 80% 이상 활동 + 키오스크 사용 학원이 없습니다
                     </p>
                   </div>
                 ) : (
@@ -767,13 +838,29 @@ export default function AIIntelligencePage() {
               rows={8}
               className="resize-none"
             />
-            <DialogFooter className="gap-2">
+            <DialogFooter className="gap-2 sm:gap-2">
               <Button variant="outline" onClick={() => setShowMessage(false)}>
                 취소
               </Button>
-              <Button onClick={() => handleSendApproval('check_in')} className="gap-2">
+              <Button
+                variant="outline"
+                onClick={() => handleSendApproval(selectedMessageType)}
+                className="gap-2"
+              >
                 <Send className="h-4 w-4" />
-                텔레그램으로 승인 요청
+                텔레그램 승인 요청
+              </Button>
+              <Button
+                onClick={() => handleSendLms(selectedMessageType)}
+                disabled={sendingLms}
+                className="gap-2"
+              >
+                {sendingLms ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <MessageSquare className="h-4 w-4" />
+                )}
+                LMS 발송
               </Button>
             </DialogFooter>
           </DialogContent>

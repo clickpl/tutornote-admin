@@ -129,6 +129,14 @@ export function TelegramChart({ onRefresh }: TelegramChartProps) {
                   <stop offset="5%" stopColor="#3B82F6" stopOpacity={isDark ? 0.3 : 0.2} />
                   <stop offset="95%" stopColor="#3B82F6" stopOpacity={0} />
                 </linearGradient>
+                <linearGradient id="colorDailyReport" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#10B981" stopOpacity={isDark ? 0.3 : 0.2} />
+                  <stop offset="95%" stopColor="#10B981" stopOpacity={0} />
+                </linearGradient>
+                <linearGradient id="colorServiceReport" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#8B5CF6" stopOpacity={isDark ? 0.3 : 0.2} />
+                  <stop offset="95%" stopColor="#8B5CF6" stopOpacity={0} />
+                </linearGradient>
                 <linearGradient id="colorError" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#EF4444" stopOpacity={isDark ? 0.3 : 0.2} />
                   <stop offset="95%" stopColor="#EF4444" stopOpacity={0} />
@@ -168,6 +176,13 @@ export function TelegramChart({ onRefresh }: TelegramChartProps) {
               />
               <Area
                 type="monotone"
+                dataKey="error"
+                stroke={typeColors.error}
+                fill="url(#colorError)"
+                strokeWidth={2}
+              />
+              <Area
+                type="monotone"
                 dataKey="server_check"
                 stroke={typeColors.server_check}
                 fill="url(#colorServerCheck)"
@@ -175,9 +190,16 @@ export function TelegramChart({ onRefresh }: TelegramChartProps) {
               />
               <Area
                 type="monotone"
-                dataKey="error"
-                stroke={typeColors.error}
-                fill="url(#colorError)"
+                dataKey="daily_report"
+                stroke={typeColors.daily_report}
+                fill="url(#colorDailyReport)"
+                strokeWidth={2}
+              />
+              <Area
+                type="monotone"
+                dataKey="service_report"
+                stroke={typeColors.service_report}
+                fill="url(#colorServiceReport)"
                 strokeWidth={2}
               />
             </AreaChart>

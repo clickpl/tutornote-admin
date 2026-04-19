@@ -10,7 +10,7 @@ import CostSettingsPanel from './components/CostSettingsPanel';
 
 export default function BusinessMetricsPage() {
   const [refreshInterval, setRefreshInterval] = useState<number | null>(null);
-  const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
+  const [refreshKey, setRefreshKey] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [costSettingsOpen, setCostSettingsOpen] = useState(false);
 
@@ -19,8 +19,7 @@ export default function BusinessMetricsPage() {
     if (!refreshInterval) return;
 
     const timer = setInterval(() => {
-      setLastRefresh(new Date());
-      console.log('Auto refresh triggered at', new Date().toLocaleTimeString());
+      setRefreshKey(prev => prev + 1);
     }, refreshInterval * 1000);
 
     return () => clearInterval(timer);
@@ -58,13 +57,13 @@ export default function BusinessMetricsPage() {
         <div className="p-6">
           <div className="mx-auto max-w-[1800px] space-y-6">
             {/* PMF 지표 섹션 */}
-            <PMFMetricsSection />
+            <PMFMetricsSection refreshKey={refreshKey} />
 
             {/* 마일스톤 섹션 */}
-            <MilestoneSection />
+            <MilestoneSection refreshKey={refreshKey} />
 
             {/* 수익 시뮬레이션 섹션 */}
-            <SimulationSection onOpenSettings={handleOpenCostSettings} />
+            <SimulationSection refreshKey={refreshKey} onOpenSettings={handleOpenCostSettings} />
           </div>
         </div>
 
@@ -89,13 +88,13 @@ export default function BusinessMetricsPage() {
         />
 
         {/* PMF 지표 섹션 */}
-        <PMFMetricsSection />
+        <PMFMetricsSection refreshKey={refreshKey} />
 
         {/* 마일스톤 섹션 */}
-        <MilestoneSection />
+        <MilestoneSection refreshKey={refreshKey} />
 
         {/* 수익 시뮬레이션 섹션 */}
-        <SimulationSection onOpenSettings={handleOpenCostSettings} />
+        <SimulationSection refreshKey={refreshKey} onOpenSettings={handleOpenCostSettings} />
       </div>
 
       {/* 비용 설정 패널 */}

@@ -127,16 +127,16 @@ export default function MetricsPage() {
             <MetricCard
               icon={Activity}
               iconColor="text-blue-500"
-              label="DAU / MAU"
-              value={`${overview?.retention.dau ?? 0} / ${overview?.retention.mau ?? 0}`}
-              subtext="일간/월간 활성 학원"
+              label="WAU / MAU"
+              value={`${overview?.retention.wau ?? 0} / ${overview?.retention.mau ?? 0}`}
+              subtext="주간/월간 활성 학원"
             />
             <MetricCard
               icon={TrendingUp}
               iconColor="text-green-500"
               label="학원 고착도"
               value={overview?.retention.stickiness_label ?? '0%'}
-              subtext="DAU/MAU 비율 (높을수록 좋음)"
+              subtext="WAU/MAU 비율 (높을수록 좋음)"
               highlight={(overview?.retention.stickiness ?? 0) > 20}
             />
             <MetricCard

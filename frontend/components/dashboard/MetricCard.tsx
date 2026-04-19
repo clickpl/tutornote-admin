@@ -1,8 +1,9 @@
 'use client';
 
-import { LucideIcon, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { LucideIcon, TrendingUp, TrendingDown, Minus, Info } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 
 interface MetricCardProps {
   icon: LucideIcon;
@@ -13,6 +14,7 @@ interface MetricCardProps {
   trendLabel?: string;
   color?: 'blue' | 'green' | 'yellow' | 'red' | 'purple' | 'orange';
   loading?: boolean;
+  tooltip?: string;
 }
 
 const colorClasses = {
@@ -33,6 +35,7 @@ export default function MetricCard({
   trendLabel,
   color = 'blue',
   loading = false,
+  tooltip,
 }: MetricCardProps) {
   if (loading) {
     return (
@@ -52,7 +55,21 @@ export default function MetricCard({
   return (
     <Card className="hover:shadow-md transition-shadow">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardDescription className="text-sm font-medium">{label}</CardDescription>
+        <div className="flex items-center gap-1">
+          <CardDescription className="text-sm font-medium">{label}</CardDescription>
+          {tooltip && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button type="button" className="text-muted-foreground/50 hover:text-muted-foreground transition-colors">
+                  <Info className="h-3.5 w-3.5" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="max-w-[240px] text-left">
+                {tooltip}
+              </TooltipContent>
+            </Tooltip>
+          )}
+        </div>
         <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${colorClasses[color]}`}>
           <Icon className="h-4 w-4" />
         </div>
