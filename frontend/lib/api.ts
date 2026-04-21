@@ -1688,16 +1688,25 @@ export const alimtalkApi = {
     }),
 };
 
+export interface SupportRequestStats {
+  total: number;
+  difficulties: { code: string; label: string; count: number }[];
+  intent: { code: string; label: string; count: number }[];
+  wants_help: { yes: number; no: number };
+}
+
+export type SupportRequestListParams = {
+  status?: string;
+  source?: string;
+  academy_id?: number;
+  date_from?: string;
+  date_to?: string;
+  page?: number;
+  limit?: number;
+};
+
 export const supportRequestsApi = {
-  list: (params?: {
-    status?: string;
-    source?: string;
-    academy_id?: number;
-    date_from?: string;
-    date_to?: string;
-    page?: number;
-    limit?: number;
-  }) => {
+  list: (params?: SupportRequestListParams) => {
     const searchParams = new URLSearchParams();
     if (params?.status) searchParams.append('status', params.status);
     if (params?.source) searchParams.append('source', params.source);
@@ -1721,6 +1730,23 @@ export const supportRequestsApi = {
         body: JSON.stringify(data),
       }
     ),
+
+  getStats: async (params?: SupportRequestListParams): Promise<SupportRequestStats> => {
+    const searchParams = new URLSearchParams();
+    if (params?.status) searchParams.append('status', params.status);
+    if (params?.source) searchParams.append('source', params.source);
+    if (params?.academy_id) searchParams.append('academy_id', String(params.academy_id));
+    if (params?.date_from) searchParams.append('date_from', params.date_from);
+    if (params?.date_to) searchParams.append('date_to', params.date_to);
+    const qs = searchParams.toString();
+    const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : null;
+    const res = await fetch(
+      `${API_URL}/api/admin/support-requests/stats${qs ? '?' + qs : ''}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    if (!res.ok) throw new Error('stats fetch failed');
+    return res.json();
+  },
 };
 
 export const academyPaymentsApi = {

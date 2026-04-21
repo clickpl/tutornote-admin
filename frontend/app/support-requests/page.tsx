@@ -14,9 +14,10 @@ import {
   XCircle,
   AlertCircle,
   InboxIcon,
+  BarChart2,
 } from 'lucide-react';
 import AdminLayout from '@/components/layout/AdminLayout';
-import { supportRequestsApi, type SupportRequest, type SupportRequestStatus } from '@/lib/api';
+import { supportRequestsApi, type SupportRequest, type SupportRequestStatus, type SupportRequestStats } from '@/lib/api';
 import { formatKSTDate } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -277,6 +278,103 @@ function DetailModal({ request, onClose, onUpdated }: DetailModalProps) {
   );
 }
 
+// ─── Stats 섹션 ──────────────────────────────────────────────────────────────
+
+function StatsSection({ stats }: { stats: SupportRequestStats }) {
+  if (stats.total === 0) return null;
+
+  const maxDiffCount = stats.difficulties.reduce((m, d) => Math.max(m, d.count), 0);
+  const maxIntentCount = stats.intent.reduce((m, d) => Math.max(m, d.count), 0);
+  const helpTotal = stats.wants_help.yes + stats.wants_help.no;
+  const helpYesPct = helpTotal > 0 ? Math.round((stats.wants_help.yes / helpTotal) * 100) : 0;
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      {/* 카드1: 어려움 유형 */}
+      <Card className="border-slate-200">
+        <CardContent className="p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <BarChart2 className="h-4 w-4 text-blue-500" />
+            <p className="text-sm font-semibold">어려움 유형</p>
+          </div>
+          <div className="space-y-2">
+            {stats.difficulties.slice(0, 5).map((d) => (
+              <div key={d.code}>
+                <div className="flex items-center justify-between mb-0.5">
+                  <span className="text-xs text-muted-foreground truncate max-w-[80%]">{d.label}</span>
+                  <span className="text-xs font-semibold text-foreground ml-1">{d.count}{stats.total > 0 ? <span className="text-muted-foreground font-normal"> ({Math.round((d.count / stats.total) * 100)}%)</span> : ''}</span>
+                </div>
+                <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-blue-400 rounded-full"
+                    style={{ width: maxDiffCount > 0 ? `${Math.round((d.count / maxDiffCount) * 100)}%` : '0%' }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* 카드2: 재개 의사 */}
+      <Card className="border-slate-200">
+        <CardContent className="p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <BarChart2 className="h-4 w-4 text-emerald-500" />
+            <p className="text-sm font-semibold">재개 의사</p>
+          </div>
+          <div className="space-y-2">
+            {stats.intent.map((d) => {
+              const pct = helpTotal > 0 ? Math.round((d.count / stats.total) * 100) : 0;
+              return (
+                <div key={d.code}>
+                  <div className="flex items-center justify-between mb-0.5">
+                    <span className="text-xs text-muted-foreground truncate max-w-[75%]">{d.label}</span>
+                    <span className="text-xs font-semibold text-foreground ml-1">{d.count} <span className="text-muted-foreground font-normal">({pct}%)</span></span>
+                  </div>
+                  <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-emerald-400 rounded-full"
+                      style={{ width: maxIntentCount > 0 ? `${Math.round((d.count / maxIntentCount) * 100)}%` : '0%' }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* 카드3: 도움 요청 */}
+      <Card className="border-slate-200">
+        <CardContent className="p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <BarChart2 className="h-4 w-4 text-violet-500" />
+            <p className="text-sm font-semibold">도움 요청 여부</p>
+          </div>
+          <div className="flex items-end gap-6 mb-4">
+            <div className="text-center">
+              <p className="text-3xl font-bold text-emerald-600">{stats.wants_help.yes}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">도와주세요</p>
+            </div>
+            <div className="text-center">
+              <p className="text-3xl font-bold text-slate-400">{stats.wants_help.no}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">혼자 해볼게요</p>
+            </div>
+          </div>
+          <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-emerald-400 rounded-full transition-all"
+              style={{ width: `${helpYesPct}%` }}
+            />
+          </div>
+          <p className="text-xs text-muted-foreground mt-1 text-right">{helpYesPct}% 도움 요청</p>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 // ─── 카드 아이템 ─────────────────────────────────────────────────────────────
 
 interface RequestCardProps {
@@ -349,6 +447,7 @@ function RequestCard({ item, onDetail, onQuickResolve }: RequestCardProps) {
 export default function SupportRequestsPage() {
   const [items, setItems] = useState<SupportRequest[]>([]);
   const [total, setTotal] = useState(0);
+  const [stats, setStats] = useState<SupportRequestStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
 
@@ -380,11 +479,17 @@ export default function SupportRequestsPage() {
       const dateFrom = getDateFrom(datePreset);
       if (dateFrom) params.date_from = dateFrom;
 
-      const { data } = await supportRequestsApi.list(params);
+      const [listResult, statsResult] = await Promise.all([
+        supportRequestsApi.list(params),
+        supportRequestsApi.getStats(params).catch(() => null),
+      ]);
 
-      if (data) {
-        setItems(data.items);
-        setTotal(data.total);
+      if (listResult.data) {
+        setItems(listResult.data.items);
+        setTotal(listResult.data.total);
+      }
+      if (statsResult) {
+        setStats(statsResult);
       }
       setLoading(false);
     },
@@ -474,6 +579,9 @@ export default function SupportRequestsPage() {
             <Button type="submit" size="sm">검색</Button>
           </form>
         </div>
+
+        {/* Stats 섹션 */}
+        {stats && <StatsSection stats={stats} />}
 
         {/* 총 건수 */}
         <p className="text-sm text-muted-foreground">
