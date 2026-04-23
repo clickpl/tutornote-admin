@@ -20,6 +20,17 @@ import {
   OnboardingFunnelAcademy,
 } from '@/lib/api';
 
+function maskEmail(email: string | null | undefined): string {
+  if (!email) return '';
+  const atIdx = email.indexOf('@');
+  if (atIdx < 0) return '****';
+  const local = email.slice(0, atIdx);
+  const domain = email.slice(atIdx + 1);
+  if (!domain) return '****';
+  if (local.length <= 3) return `****@${domain}`;
+  return `${local.slice(0, 4)}***@${domain}`;
+}
+
 interface DashboardTablesProps {
   atRiskAcademies: AtRiskAcademy[];
   activeAcademies: ActiveAcademy[];
@@ -167,8 +178,31 @@ export default function DashboardTables({
                 <TableBody>
                   {atRiskAcademies.slice(0, 10).map((academy) => (
                     <TableRow key={academy.id}>
-                      <TableCell className="font-medium">{academy.academy_name}</TableCell>
-                      <TableCell>{academy.owner_name}</TableCell>
+                      <TableCell className="font-medium min-w-0">
+                        <div className="truncate">{academy.academy_name}</div>
+                        {(academy.email || academy.id) && (
+                          <div
+                            className="mt-0.5 text-xs text-muted-foreground truncate"
+                            aria-label={
+                              academy.email && academy.id
+                                ? `학원 식별자: ID ${academy.id}, 이메일 ${maskEmail(academy.email)}`
+                                : academy.id
+                                ? `학원 식별자: ID ${academy.id}`
+                                : `학원 식별자: 이메일 ${maskEmail(academy.email)}`
+                            }
+                          >
+                            {academy.email && <span>{maskEmail(academy.email)}</span>}
+                            {academy.email && <span className="mx-1">·</span>}
+                            <span>#{academy.id}</span>
+                          </div>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <div>{academy.owner_name}</div>
+                        {academy.member_name && academy.member_name !== academy.owner_name && (
+                          <div className="text-xs text-muted-foreground">계정: {academy.member_name}</div>
+                        )}
+                      </TableCell>
                       <TableCell>{academy.student_count}명</TableCell>
                       <TableCell className="text-red-500 font-medium">
                         {academy.inactive_days}일
@@ -247,15 +281,38 @@ export default function DashboardTables({
                 <TableBody>
                   {activeAcademies.slice(0, 10).map((academy) => (
                     <TableRow key={academy.id}>
-                      <TableCell className="font-medium">
-                        {academy.academy_name}
-                        {academy.is_loyal && (
-                          <Badge variant="secondary" className="ml-2 bg-purple-100 text-purple-600">
-                            충성
-                          </Badge>
+                      <TableCell className="font-medium min-w-0">
+                        <div className="flex items-center gap-1 truncate">
+                          <span className="truncate">{academy.academy_name}</span>
+                          {academy.is_loyal && (
+                            <Badge variant="secondary" className="shrink-0 bg-purple-100 text-purple-600">
+                              충성
+                            </Badge>
+                          )}
+                        </div>
+                        {(academy.email || academy.id) && (
+                          <div
+                            className="mt-0.5 text-xs text-muted-foreground truncate"
+                            aria-label={
+                              academy.email && academy.id
+                                ? `학원 식별자: ID ${academy.id}, 이메일 ${maskEmail(academy.email)}`
+                                : academy.id
+                                ? `학원 식별자: ID ${academy.id}`
+                                : `학원 식별자: 이메일 ${maskEmail(academy.email)}`
+                            }
+                          >
+                            {academy.email && <span>{maskEmail(academy.email)}</span>}
+                            {academy.email && <span className="mx-1">·</span>}
+                            <span>#{academy.id}</span>
+                          </div>
                         )}
                       </TableCell>
-                      <TableCell>{academy.owner_name}</TableCell>
+                      <TableCell>
+                        <div>{academy.owner_name}</div>
+                        {academy.member_name && academy.member_name !== academy.owner_name && (
+                          <div className="text-xs text-muted-foreground">계정: {academy.member_name}</div>
+                        )}
+                      </TableCell>
                       <TableCell>{academy.student_count}명</TableCell>
                       <TableCell className="text-green-600 font-medium">
                         {academy.monthly_progress}건

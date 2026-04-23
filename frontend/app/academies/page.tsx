@@ -39,6 +39,7 @@ interface Academy {
   phone: string;
   owner_email: string;
   owner_name: string;
+  member_name?: string;
   student_count: number;
   attendance_code_type: string;
   status: string;
@@ -234,7 +235,7 @@ export default function AcademiesPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>학원명</TableHead>
-                      <TableHead>원장</TableHead>
+                      <TableHead>원장 / 회원</TableHead>
                       <TableHead>플랜</TableHead>
                       <TableHead>학생수</TableHead>
                       <TableHead>상태</TableHead>
@@ -266,10 +267,13 @@ export default function AcademiesPage() {
                             </div>
                           </TableCell>
                           <TableCell>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-start gap-2">
                               <div>
                                 <p className="font-medium">{academy.owner_name || '-'}</p>
                                 <p className="text-xs text-muted-foreground">{academy.owner_email}</p>
+                                {academy.member_name && academy.member_name !== academy.owner_name && (
+                                  <p className="text-xs text-muted-foreground">계정: {academy.member_name}</p>
+                                )}
                               </div>
                               {(() => {
                                 const config = providerConfig[academy.provider || 'local'] || providerConfig.local;

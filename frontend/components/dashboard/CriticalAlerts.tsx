@@ -26,6 +26,20 @@ interface Alert {
   threshold: number;
   created_at: string;
   academy_id?: number;
+  email?: string;
+  owner_name?: string;
+  member_name?: string;
+}
+
+function maskEmail(email: string | null | undefined): string {
+  if (!email) return '';
+  const atIdx = email.indexOf('@');
+  if (atIdx < 0) return '****';
+  const local = email.slice(0, atIdx);
+  const domain = email.slice(atIdx + 1);
+  if (!domain) return '****';
+  if (local.length <= 3) return `****@${domain}`;
+  return `${local.slice(0, 4)}***@${domain}`;
 }
 
 interface AlertsResponse {
@@ -227,6 +241,7 @@ function AlertCard({ alert, onAction }: { alert: Alert; onAction: (alert: Alert)
       border: 'border-red-500 bg-red-50 dark:bg-red-950',
       icon: <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400" />,
       title: 'text-red-800 dark:text-red-200',
+      subText: 'text-red-700/80 dark:text-red-300/80',
       button: 'destructive' as const,
       buttonClass: '',
     },
@@ -234,6 +249,7 @@ function AlertCard({ alert, onAction }: { alert: Alert; onAction: (alert: Alert)
       border: 'border-yellow-500 bg-yellow-50 dark:bg-yellow-950',
       icon: <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />,
       title: 'text-yellow-800 dark:text-yellow-200',
+      subText: 'text-amber-800/80 dark:text-yellow-300/80',
       button: 'default' as const,
       buttonClass: 'bg-yellow-600 hover:bg-yellow-700 dark:bg-yellow-700 dark:hover:bg-yellow-800',
     },
@@ -241,6 +257,7 @@ function AlertCard({ alert, onAction }: { alert: Alert; onAction: (alert: Alert)
       border: 'border-amber-500 bg-amber-50 dark:bg-amber-950',
       icon: <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400" />,
       title: 'text-amber-800 dark:text-amber-200',
+      subText: 'text-yellow-800/80 dark:text-amber-300/80',
       button: 'outline' as const,
       buttonClass: 'border-amber-500 text-amber-700 hover:bg-amber-100 dark:text-amber-300',
     },
@@ -254,9 +271,33 @@ function AlertCard({ alert, onAction }: { alert: Alert; onAction: (alert: Alert)
         <div className="flex-1">
           <div className="mb-1 flex items-center gap-2">
             {style.icon}
-            <h3 className={`font-bold ${style.title}`}>
-              {alert.title}
-            </h3>
+            <div>
+              <h3 className={`font-bold ${style.title}`}>
+                {alert.title}
+              </h3>
+              {(alert.academy_id || alert.email) && (
+                <p
+                  className={`mt-0.5 flex flex-wrap gap-x-1 text-xs ${style.subText}`}
+                  aria-label={
+                    alert.academy_id && alert.email
+                      ? `학원 식별자: ID ${alert.academy_id}, 이메일 ${maskEmail(alert.email)}${alert.member_name && alert.member_name !== alert.owner_name ? `, 계정 ${alert.member_name}` : ""}`
+                      : alert.academy_id
+                      ? `학원 식별자: ID ${alert.academy_id}${alert.member_name && alert.member_name !== alert.owner_name ? `, 계정 ${alert.member_name}` : ""}`
+                      : `학원 식별자: 이메일 ${maskEmail(alert.email)}${alert.member_name && alert.member_name !== alert.owner_name ? `, 계정 ${alert.member_name}` : ""}`
+                  }
+                >
+                  {alert.academy_id && <span>#{alert.academy_id}</span>}
+                  {alert.academy_id && alert.email && <span>·</span>}
+                  {alert.email && <span>{maskEmail(alert.email)}</span>}
+                  {alert.member_name && alert.member_name !== alert.owner_name && (
+                    <>
+                      <span>·</span>
+                      <span>계정: {alert.member_name}</span>
+                    </>
+                  )}
+                </p>
+              )}
+            </div>
           </div>
           <p className="mb-2 text-sm text-gray-700 dark:text-gray-300">
             {alert.description}

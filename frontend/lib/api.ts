@@ -102,6 +102,9 @@ export const dashboardApi = {
         value: number;
         threshold: number;
         created_at: string;
+        academy_id?: number;
+        email?: string;
+        member_name?: string;
       }>;
       total_count: number;
     }>('/api/admin/dashboard/alerts'),
@@ -125,6 +128,7 @@ export const academiesApi = {
         phone: string;
         owner_email: string;
         owner_name: string;
+        member_name?: string;
         student_count: number;
         attendance_code_type: string;
         status: string;
@@ -736,6 +740,7 @@ export interface AtRiskAcademy {
   id: number;
   academy_name: string;
   owner_name: string;
+  member_name?: string;
   phone: string;
   student_count: number;
   report_count: number;
@@ -744,12 +749,14 @@ export interface AtRiskAcademy {
   inactive_days: number;
   signup_date: string;
   risk_level: 'critical' | 'warning' | 'caution';
+  email?: string;
 }
 
 export interface ActiveAcademy {
   id: number;
   academy_name: string;
   owner_name: string;
+  member_name?: string;
   phone: string;
   student_count: number;
   monthly_progress: number;
@@ -758,6 +765,7 @@ export interface ActiveAcademy {
   signup_date: string;
   is_loyal: boolean;
   recommended_plan: string;
+  email?: string;
 }
 
 export interface OnboardingFunnelAcademy {
