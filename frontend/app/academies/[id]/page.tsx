@@ -75,7 +75,7 @@ interface AcademyDetail {
   owner_email: string;
   owner_name: string;
   owner_phone: string;
-  attendance_code_type: string;
+  attendance_code_method: string;
   status: string;
   kiosk_code: string;
   created_at: string;
@@ -133,7 +133,7 @@ export default function AcademyDetailPage() {
         name: data.name || '',
         phone: data.phone || '',
         address: data.address || '',
-        attendance_code_method: data.attendance_code_type || 'auto',
+        attendance_code_method: data.attendance_code_method || 'phone',
         kiosk_code: data.kiosk_code || '',
       });
     } else if (error) {
@@ -369,7 +369,7 @@ export default function AcademyDetailPage() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="phone_last4">휴대폰 뒤 4자리</SelectItem>
+                          <SelectItem value="phone">휴대폰 뒤 4자리</SelectItem>
                           <SelectItem value="auto">자동 할당</SelectItem>
                         </SelectContent>
                       </Select>
@@ -409,8 +409,8 @@ export default function AcademyDetailPage() {
                       </div>
                       <div className="space-y-1">
                         <p className="text-xs text-muted-foreground">출석방식</p>
-                        <Badge variant={academy.attendance_code_type === 'phone_last4' ? 'default' : 'secondary'}>
-                          {academy.attendance_code_type === 'phone_last4' ? '뒤4자리' : '자동할당'}
+                        <Badge variant={academy.attendance_code_method === 'phone' ? 'default' : 'secondary'}>
+                          {academy.attendance_code_method === 'phone' ? '뒤4자리' : '자동할당'}
                         </Badge>
                       </div>
                       <div className="space-y-1">

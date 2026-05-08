@@ -41,7 +41,7 @@ interface Academy {
   owner_name: string;
   member_name?: string;
   student_count: number;
-  attendance_code_type: string;
+  attendance_code_method: string;
   status: string;
   provider?: string;
   plan: 'free' | 'aiplus' | 'payment';
@@ -326,8 +326,8 @@ export default function AcademiesPage() {
                             </Badge>
                           </TableCell>
                           <TableCell>
-                            <Badge variant={academy.attendance_code_type === 'phone_last4' ? 'default' : 'secondary'}>
-                              {academy.attendance_code_type === 'phone_last4' ? '뒤4자리' : '자동할당'}
+                            <Badge variant={academy.attendance_code_method === 'phone' ? 'default' : 'secondary'}>
+                              {academy.attendance_code_method === 'phone' ? '뒤4자리' : '자동할당'}
                             </Badge>
                           </TableCell>
                           <TableCell className="text-muted-foreground">

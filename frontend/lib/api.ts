@@ -130,7 +130,7 @@ export const academiesApi = {
         owner_name: string;
         member_name?: string;
         student_count: number;
-        attendance_code_type: string;
+        attendance_code_method: string;
         status: string;
         plan: 'free' | 'aiplus' | 'payment';
         payment_enabled: boolean;
@@ -154,7 +154,7 @@ export const academiesApi = {
       owner_email: string;
       owner_name: string;
       owner_phone: string;
-      attendance_code_type: string;
+      attendance_code_method: string;
       status: string;
       kiosk_code: string;
       created_at: string;

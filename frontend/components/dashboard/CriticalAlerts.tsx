@@ -76,7 +76,7 @@ export default function CriticalAlerts() {
   const [data, setData] = useState<AlertsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   const handleAction = useCallback((alert: Alert) => {
