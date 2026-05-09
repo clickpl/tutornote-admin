@@ -213,7 +213,7 @@ export default function DashboardPage() {
           <MetricCard
             icon={Building2}
             label="활성 학원"
-            tooltip="최근 7일 내 로그인, 출석, 수업일지 중 하나라도 활동이 있는 학원 수"
+            tooltip="최근 7일 내 출석/수업일지 활동 또는 가입 후 7일 경과 학원의 로그인이 있는 학원 수 (테스트 학원 제외)"
             value={academyStatus?.active_academies ?? 0}
             subValue={`전체 ${academyStatus?.total_academies ?? 0} / 이탈 ${academyStatus?.churned_this_month ?? 0}`}
             trend="up"
