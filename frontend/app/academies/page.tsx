@@ -50,6 +50,9 @@ interface Academy {
   is_founding_member: boolean;
   created_at: string;
   last_login_at?: string;
+  owner_phone?: string;
+  last_activity_at?: string | null;
+  last_activity_type?: 'student' | 'attendance' | 'progress' | null;
 }
 
 const planConfig: Record<string, { label: string; className: string; aiLabel: string }> = {
@@ -239,7 +242,7 @@ export default function AcademiesPage() {
                       <TableHead>플랜</TableHead>
                       <TableHead>학생수</TableHead>
                       <TableHead>상태</TableHead>
-                      <TableHead>출석방식</TableHead>
+                      <TableHead>마지막 활동</TableHead>
                       <TableHead>가입일</TableHead>
                       <TableHead>최근 로그인</TableHead>
                       <TableHead className="w-[120px]">관리</TableHead>
@@ -271,6 +274,7 @@ export default function AcademiesPage() {
                               <div>
                                 <p className="font-medium">{academy.owner_name || '-'}</p>
                                 <p className="text-xs text-muted-foreground">{academy.owner_email}</p>
+                                <p className="text-xs text-muted-foreground">{academy.owner_phone || '-'}</p>
                                 {academy.member_name && academy.member_name !== academy.owner_name && (
                                   <p className="text-xs text-muted-foreground">계정: {academy.member_name}</p>
                                 )}
@@ -326,9 +330,24 @@ export default function AcademiesPage() {
                             </Badge>
                           </TableCell>
                           <TableCell>
-                            <Badge variant={academy.attendance_code_method === 'phone' ? 'default' : 'secondary'}>
-                              {academy.attendance_code_method === 'phone' ? '뒤4자리' : '자동할당'}
-                            </Badge>
+                            {(() => {
+                              const activityLabelMap: Record<string, string> = {
+                                student: '학생 추가/수정',
+                                attendance: '출석 체크',
+                                progress: '평가 입력',
+                              };
+                              const label = academy.last_activity_type
+                                ? activityLabelMap[academy.last_activity_type] ?? '활동 없음'
+                                : '활동 없음';
+                              return (
+                                <div>
+                                  <p className="text-xs font-medium">{label}</p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {academy.last_activity_at ? formatDate(academy.last_activity_at) : '-'}
+                                  </p>
+                                </div>
+                              );
+                            })()}
                           </TableCell>
                           <TableCell className="text-muted-foreground">
                             {formatDate(academy.created_at)}
@@ -346,7 +365,7 @@ export default function AcademiesPage() {
                                   setAlimtalkTarget({
                                     academyId: academy.id,
                                     ownerName: academy.owner_name || '',
-                                    ownerPhone: academy.phone || '',
+                                    ownerPhone: academy.owner_phone || academy.phone || '',
                                   })
                                 }
                               >
