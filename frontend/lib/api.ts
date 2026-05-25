@@ -881,34 +881,6 @@ export const dashboardTablesApi = {
     ),
 };
 
-export const reportTrackingApi = {
-  // 학부모 열람 추적 API
-  trackView: (shareToken: string, viewerType = 'parent') =>
-    fetchApi<{ success: boolean; view_id: number }>(
-      '/api/reports/track-view',
-      {
-        method: 'POST',
-        body: JSON.stringify({ share_token: shareToken, viewer_type: viewerType }),
-      }
-    ),
-
-  trackDuration: (shareToken: string, duration: number) =>
-    fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3003'}/api/reports/track-duration`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ share_token: shareToken, duration }),
-      keepalive: true, // Beacon API 대용
-    }),
-
-  getViewsStats: () =>
-    fetchApi<{
-      total_views: number;
-      unique_reports: number;
-      avg_duration: number;
-      parent_views: number;
-    }>('/api/reports/views-stats'),
-};
-
 // Attendance Correction
 export interface AttendanceRecord {
   id: number;
